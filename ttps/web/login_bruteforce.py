@@ -1,5 +1,3 @@
-# ttp_framework/ttps/web/login_bruteforce.py
-
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.common.exceptions import NoSuchElementException

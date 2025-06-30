@@ -1,5 +1,3 @@
-# ttp_framework/core/executor.py
-
 import time
 import logging
 from selenium import webdriver

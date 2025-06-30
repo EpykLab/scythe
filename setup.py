@@ -10,14 +10,14 @@ with open("requirements.txt", "r", encoding="utf-8") as f:
 
 setuptools.setup(
     # Name of the package
-    name="ttp-security-framework",
+    name="scythe",
 
     # Version of the package
     version="0.1.0",
 
     # Author information
-    author="Your Name / Your Company",
-    author_email="your.email@example.com",
+    author="EpykLab",
+    author_email="cyber@epyklab.com",
 
     # A short, one-sentence summary of the package
     description="An extensible framework for emulating attacker TTPs with Selenium.",

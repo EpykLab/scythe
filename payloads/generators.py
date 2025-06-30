@@ -1,5 +1,3 @@
-# ttp_framework/payloads/generators.py
-
 from typing import List, Generator, Any
 
 class PayloadGenerator:
