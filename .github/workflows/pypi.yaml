@@ -1,8 +1,9 @@
 name: Publish Python Package to PyPI
 
 on:
-  release:
-    types: [created] # Run this workflow when a new GitHub release is created
+  push:
+    tags:
+      - "v*"
 
 jobs:
   pypi-publish:
