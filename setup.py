@@ -7,7 +7,7 @@ with open("./requirements.txt", "r", encoding="utf-8") as f:
     install_requires = f.read().splitlines()
 
 setuptools.setup(
-    name="scythe",
+    name="scythe-ttp",
     version="0.1.0",
     author="EpykLab",
     author_email="cyber@epyklab.com",
