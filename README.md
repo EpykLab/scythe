@@ -1,3 +1,8 @@
+<h1 align="center">
+  <img src="./assets/scythe.png" alt="scythe" width="200px">
+  <br>
+</h1>
+
 # Scythe
 
 An extensible framework for emulating attacker TTPs with Selenium.
