@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r", encoding="utf-8") as f:
+with open("./requirements.txt", "r", encoding="utf-8") as f:
     install_requires = f.read().splitlines()
 
 setuptools.setup(
@@ -15,7 +15,6 @@ setuptools.setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/EpykLab/scythe",
-    license="MIT",
 
     classifiers=[
         "Programming Language :: Python :: 3",
