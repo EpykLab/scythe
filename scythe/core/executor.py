@@ -59,10 +59,10 @@ class TTPExecutor:
                 time.sleep(self.delay) # Wait for page reaction
 
                 if self.ttp.verify_result(self.driver):
-                    self.logger.warning(f"SUCCESS: Vulnerability detected with payload: '{payload}'")
+                    self.logger.warning(f"SUCCESS: '{payload}'")
                     self.results.append({'payload': payload, 'url': self.driver.current_url})
                 else:
-                    self.logger.info("Step failed as expected for a secure system.")
+                    self.logger.info("Step did not complete successfully")
 
         except KeyboardInterrupt:
             self.logger.info("Test interrupted by user.")
