@@ -10,7 +10,7 @@ tasks:
     cmds:
       - echo "{{.GREETING}}"
     silent: true
-  relase:
+  release:
     cmds:
       - awk -v ver="$(cat VERSION)" 'BEGIN{FS=OFS="\""} /version\s*=/ {$2=ver} 1' setup.py > setup.py.tmp && mv setup.py.tmp setup.py
       - git push --tags
