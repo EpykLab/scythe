@@ -21,6 +21,7 @@ and helps you test your detection capabilities.
 ## Features
 
   * **Extensible TTP Framework**: Easily create new TTPs by extending the abstract base class.
+  * **Behavior System**: Control TTP execution patterns with built-in behaviors (Human, Machine, Stealth) or create custom behaviors.
   * **Payload Generators**: Generate payloads from wordlists or static lists.
   * **Selenium-based**: Utilizes the power of Selenium for realistic browser automation.
   * **Configurable**: Easily configure TTPs with different selectors and payloads.
@@ -54,6 +55,7 @@ and helps you test your detection capabilities.
     from scythe.core.executor import TTPExecutor
     from scythe.ttps.web.login_bruteforce import LoginBruteforceTTP
     from scythe.payloads.generators import WordlistPayloadGenerator
+    from scythe.behaviors import HumanBehavior
 
     # Create a payload generator
     payload_generator = WordlistPayloadGenerator("path/to/your/password_list.txt")
@@ -67,10 +69,18 @@ and helps you test your detection capabilities.
         submit_selector="#submit"
     )
 
+    # Create a behavior (optional)
+    human_behavior = HumanBehavior(
+        base_delay=2.0,
+        delay_variance=1.0,
+        mouse_movement=True
+    )
+
     # Create a TTP executor
     executor = TTPExecutor(
         ttp=login_bruteforce_ttp,
-        target_url="http://localhost:5000/login"
+        target_url="http://localhost:5000/login",
+        behavior=human_behavior  # Optional parameter
     )
 
     # Run the TTP
@@ -85,6 +95,121 @@ and helps you test your detection capabilities.
 
 3.  **View the Results**: The results of the TTP execution will be logged to
     the console and to a file named `ttp_test.log`.
+
+## Behaviors
+
+Scythe includes a powerful behavior system that allows you to control how TTPs are executed to make them more realistic and harder to detect. Behaviors control timing, interaction patterns, error handling, and anti-detection techniques.
+
+### Available Behaviors
+
+* **HumanBehavior**: Emulates human-like interaction patterns with variable timing and mouse movements
+* **MachineBehavior**: Provides consistent, predictable timing for automated testing
+* **StealthBehavior**: Uses randomized timing and anti-detection techniques for evasion
+* **DefaultBehavior**: Maintains original TTPExecutor functionality for backward compatibility
+
+### Human Behavior Example
+
+```python
+from scythe.behaviors import HumanBehavior
+
+# Create human-like behavior
+human_behavior = HumanBehavior(
+    base_delay=3.0,              # Slower, more human-like timing
+    delay_variance=1.5,          # High variance for realism
+    typing_delay=0.1,            # Human-like typing speed
+    mouse_movement=True,         # Enable mouse movements
+    max_consecutive_failures=3   # Give up after 3 failures like a human
+)
+
+executor = TTPExecutor(
+    ttp=your_ttp,
+    target_url="http://target.com",
+    behavior=human_behavior
+)
+```
+
+### Machine Behavior Example
+
+```python
+from scythe.behaviors import MachineBehavior
+
+# Create machine-like behavior for fast, automated testing
+machine_behavior = MachineBehavior(
+    delay=0.5,           # Fast, consistent timing
+    max_retries=5,       # Systematic retry logic
+    fail_fast=True       # Stop immediately on critical errors
+)
+
+executor = TTPExecutor(
+    ttp=your_ttp,
+    target_url="http://target.com", 
+    behavior=machine_behavior
+)
+```
+
+### Stealth Behavior Example
+
+```python
+from scythe.behaviors import StealthBehavior
+
+# Create stealth behavior for evasion
+stealth_behavior = StealthBehavior(
+    min_delay=5.0,                    # Longer delays to avoid detection
+    max_delay=15.0,                   # High variance in timing
+    burst_probability=0.05,           # Occasional burst activity
+    long_pause_probability=0.2,       # Random long pauses
+    max_requests_per_session=10,      # Limit requests per session
+    session_cooldown=120.0            # Cooldown between sessions
+)
+
+executor = TTPExecutor(
+    ttp=your_ttp,
+    target_url="http://target.com",
+    behavior=stealth_behavior
+)
+```
+
+### Creating Custom Behaviors
+
+```python
+from scythe.behaviors.base import Behavior
+
+class CustomBehavior(Behavior):
+    def __init__(self):
+        super().__init__(
+            name="Custom Behavior",
+            description="My custom behavior implementation"
+        )
+    
+    def get_step_delay(self, step_number: int) -> float:
+        # Custom delay logic
+        return 2.0 if step_number % 2 == 0 else 1.0
+    
+    def should_continue(self, step_number: int, consecutive_failures: int) -> bool:
+        # Custom continuation logic
+        return consecutive_failures < 5
+    
+    def pre_step(self, driver, payload, step_number):
+        print(f"About to execute step {step_number}")
+    
+    # Implement other methods as needed...
+
+# Use your custom behavior
+custom_behavior = CustomBehavior()
+executor = TTPExecutor(ttp=your_ttp, target_url="http://target.com", behavior=custom_behavior)
+```
+
+### Backward Compatibility
+
+The behavior system is completely optional. Existing code continues to work unchanged:
+
+```python
+# This still works exactly as before - no behavior needed
+executor = TTPExecutor(ttp=your_ttp, target_url="http://target.com")
+executor.run()
+```
+
+For detailed information about behaviors, examples, and advanced usage, see `docs/BEHAVIORS.md` and `examples/behavior_demo.py`.
 
 ## Contributing
 
