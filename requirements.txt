@@ -6,7 +6,6 @@ idna==3.10
 outcome==1.3.0.post0
 PySocks==1.7.1
 requests==2.32.4
-scythe @ git+https://github.com/EpykLab/scythe.git@2a93b3188633cefc4e7c8bd2c10aee22edaf0e0b
 selenium==4.34.0
 setuptools==80.9.0
 sniffio==1.3.1
