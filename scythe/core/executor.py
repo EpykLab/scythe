@@ -57,6 +57,20 @@ class TTPExecutor:
         self._setup_driver()
 
         try:
+            # Handle authentication if required
+            if self.ttp.requires_authentication():
+                auth_name = self.ttp.authentication.name if self.ttp.authentication else "Unknown"
+                self.logger.info(f"Authentication required for TTP: {auth_name}")
+                if self.driver:
+                    auth_success = self.ttp.authenticate(self.driver, self.target_url)
+                else:
+                    self.logger.error("WebDriver not available for authentication")
+                    return
+                if not auth_success:
+                    self.logger.error("Authentication failed - aborting TTP execution")
+                    return
+                self.logger.info("Authentication successful")
+
             # Pre-execution behavior setup
             if self.behavior and self.driver:
                 self.behavior.pre_execution(self.driver, self.target_url)
@@ -90,14 +104,23 @@ class TTPExecutor:
 
                     success = self.ttp.verify_result(self.driver) if self.driver else False
                     
+                    # Compare actual result with expected result
                     if success:
                         consecutive_failures = 0
-                        self.logger.warning(f"SUCCESS: '{payload}'")
                         current_url = self.driver.current_url if self.driver else "unknown"
-                        self.results.append({'payload': payload, 'url': current_url})
+                        result_entry = {'payload': payload, 'url': current_url, 'expected': self.ttp.expected_result, 'actual': True}
+                        self.results.append(result_entry)
+                        
+                        if self.ttp.expected_result:
+                            self.logger.info(f"EXPECTED SUCCESS: '{payload}'")
+                        else:
+                            self.logger.warning(f"UNEXPECTED SUCCESS: '{payload}' (expected to fail)")
                     else:
                         consecutive_failures += 1
-                        self.logger.info("Step did not complete successfully")
+                        if self.ttp.expected_result:
+                            self.logger.info(f"EXPECTED FAILURE: '{payload}' (security control working)")
+                        else:
+                            self.logger.info(f"EXPECTED FAILURE: '{payload}'")
 
                     # Post-step behavior
                     if self.behavior and self.driver:
@@ -137,8 +160,22 @@ class TTPExecutor:
         self.logger.info("="*50)
 
         if self.results:
-            self.logger.warning(f"Found {len(self.results)} potential vulnerabilities:")
-            for result in self.results:
-                self.logger.warning(f"  - Payload: {result['payload']} | URL: {result['url']}")
+            expected_successes = [r for r in self.results if r['expected'] and r['actual']]
+            unexpected_successes = [r for r in self.results if not r['expected'] and r['actual']]
+            
+            self.logger.info(f"Total results: {len(self.results)}")
+            
+            if expected_successes:
+                self.logger.info(f"Expected successes: {len(expected_successes)}")
+                for result in expected_successes:
+                    self.logger.info(f"  ✓ Payload: {result['payload']} | URL: {result['url']}")
+            
+            if unexpected_successes:
+                self.logger.warning(f"Unexpected successes: {len(unexpected_successes)}")
+                for result in unexpected_successes:
+                    self.logger.warning(f"  ✗ Payload: {result['payload']} | URL: {result['url']}")
         else:
-            self.logger.info("No vulnerabilities detected.")
+            if self.ttp.expected_result:
+                self.logger.info("No successes detected (expected to find vulnerabilities).")
+            else:
+                self.logger.info("No successes detected (security controls working as expected).")

@@ -9,11 +9,15 @@ class InputFieldInjector(TTP):
                  target_url: str,
                  field_selector: str,
                  submit_selector: str,
-                 payload_generator: PayloadGenerator):
+                 payload_generator: PayloadGenerator,
+                 expected_result: bool = True,
+                 authentication=None):
 
         super().__init__(
             name="SQL Injection via URL manipulation", 
-            description="simulate an sql Injection by manipulation of url queries")
+            description="simulate an sql Injection by manipulation of url queries",
+            expected_result=expected_result,
+            authentication=authentication)
 
         self.target_url = target_url
         self.field_selector = field_selector
@@ -54,10 +58,14 @@ class InputFieldInjector(TTP):
 class URLManipulation(TTP):
     def __init__(self,
                  payload_generator: PayloadGenerator,
-                 target_url: str):
+                 target_url: str,
+                 expected_result: bool = True,
+                 authentication=None):
         super().__init__(
             name="SQL Injection via URL manipulation", 
-            description="simulate an sql Injection by manipulation of url queries")
+            description="simulate an sql Injection by manipulation of url queries",
+            expected_result=expected_result,
+            authentication=authentication)
         self.target_url = target_url
         self.payload_generator = payload_generator
 

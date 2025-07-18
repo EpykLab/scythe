@@ -14,11 +14,15 @@ class LoginBruteforceTTP(TTP):
                  username: str,
                  username_selector: str,
                  password_selector: str,
-                 submit_selector: str):
+                 submit_selector: str,
+                 expected_result: bool = True,
+                 authentication=None):
 
         super().__init__(
             name="Login Bruteforce",
-            description="Attempts to guess a user's password using a list of payloads."
+            description="Attempts to guess a user's password using a list of payloads.",
+            expected_result=expected_result,
+            authentication=authentication
         )
         self.payload_generator = payload_generator
         self.username = username

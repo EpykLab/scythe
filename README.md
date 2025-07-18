@@ -1,303 +1,658 @@
 <h1 align="center">Scythe</h1>
 
-
 <h2 align="center">
   <img src="./assets/scythe.png" alt="scythe" width="200px">
   <br>
 </h2>
 
-<h4 align="center">An extensible framework for emulating attacker TTPs with Selenium.</h4>
-
+<h4 align="center">A comprehensive framework for adverse conditions testing</h4>
 
 ## Overview
 
-Scythe is a Python-based framework that allows you to test the security of your
-web applications by emulating Tactics, Techniques, and Procedures (TTPs) of
-attackers. It uses Selenium to automate browser interactions and simulate
-attacks like SQL injection, cross-site scripting (XSS), and brute-forcing. This
-allows you to validate that your web application protects against these attacks
-and helps you test your detection capabilities.
+Scythe is a powerful Python-based framework designed for testing applications under adverse conditions. Whether you're conducting security assessments, load testing, functional validation, or simulating real-world stress scenarios, Scythe provides the tools to comprehensively evaluate how your systems perform when faced with challenging conditions.
 
-## Features
+While security testing through Tactics, Techniques, and Procedures (TTPs) is a core capability, Scythe's scope extends far beyond traditional security assessments. It's built to handle any scenario where you need to test system resilience, validate expected behaviors under stress, or simulate complex user interactions at scale.
 
-  * **Extensible TTP Framework**: Easily create new TTPs by extending the abstract base class.
-  * **Behavior System**: Control TTP execution patterns with built-in behaviors (Human, Machine, Stealth) or create custom behaviors.
-  * **Payload Generators**: Generate payloads from wordlists or static lists.
-  * **Selenium-based**: Utilizes the power of Selenium for realistic browser automation.
-  * **Configurable**: Easily configure TTPs with different selectors and payloads.
-  * **Logging**: Detailed logging for each TTP execution.
+## Core Philosophy
+
+Scythe operates on the principle that robust systems must be tested under adverse conditions to ensure they perform reliably in production. These conditions can include:
+
+- **Security-focused adversarial testing**: Simulating attack patterns and malicious behavior
+- **High-demand load testing**: Overwhelming systems with legitimate but intensive usage
+- **Complex user workflow validation**: Multi-step processes under various conditions
+- **Distributed testing scenarios**: Simulating global user bases and network conditions
+- **Edge case exploration**: Testing boundary conditions and unusual usage patterns
+- **Failure scenario simulation**: Understanding system behavior when components fail
+
+## Key Capabilities
+
+### 🎯 **Comprehensive Testing Framework**
+* **TTPs (Tactics, Techniques, Procedures)**: Security-focused testing with adversarial patterns
+* **Journeys**: Multi-step workflow testing for complex user scenarios
+* **Expected Results System**: Unit-testing-style validation with clear pass/fail criteria
+* **Behavior Patterns**: Human, machine, and stealth execution patterns
+* **Extensible Architecture**: Easy to add custom testing scenarios
+
+### 🔐 **Authentication & Session Management**
+* **Multiple Authentication Methods**: Basic auth, bearer tokens, custom mechanisms
+* **Pre-execution Authentication**: Automatic login before test execution
+* **Session State Management**: Maintain authentication across complex workflows
+* **Multi-user Simulation**: Different credentials for distributed testing
+
+### 🚀 **Scale & Distribution**
+* **Concurrent Execution**: Run thousands of tests simultaneously
+* **Geographic Distribution**: Execute tests from multiple network locations
+* **Batch Processing**: Divide large test runs with intelligent retry logic
+* **Resource Management**: Efficient distribution of credentials and network resources
+* **Multiple Execution Strategies**: Sequential, parallel, and distributed patterns
+
+### 📊 **Professional Reporting**
+* **Clear Result Indicators**: ✓ Expected outcomes, ✗ Unexpected results
+* **Comprehensive Logging**: Detailed execution tracking and analysis
+* **Performance Metrics**: Timing, success rates, and resource utilization
+* **Execution Statistics**: Detailed reporting across all test types
+
+## Use Cases
+
+### Security Testing
+Validate security controls and detection capabilities:
+```python
+# Test that brute force protection works
+login_protection_test = LoginBruteforceTTP(
+    passwords=["password", "123456", "admin"],
+    expected_result=False,  # Security should prevent this
+    authentication=admin_auth
+)
+```
+
+### Load Testing
+Assess system performance under high demand:
+```python
+# Simulate 1000 concurrent user registrations
+registration_load_test = ScaleOrchestrator(
+    name="User Registration Load Test",
+    max_workers=50
+)
+result = registration_load_test.orchestrate_journey(
+    journey=user_registration_journey,
+    replications=1000
+)
+```
+
+### Functional Validation
+Test complex multi-step workflows:
+```python
+# Complete e-commerce purchase workflow
+purchase_journey = Journey("E-commerce Purchase Flow")
+purchase_journey.add_step(user_login_step)
+purchase_journey.add_step(product_selection_step)
+purchase_journey.add_step(checkout_process_step)
+purchase_journey.add_step(payment_validation_step)
+```
+
+### Distributed Testing
+Simulate global user base scenarios:
+```python
+# Test from multiple geographic locations
+global_test = DistributedOrchestrator(
+    name="Global User Simulation",
+    proxies=worldwide_proxy_list,
+    credentials=regional_user_accounts
+)
+```
+
+### Edge Case Testing
+Explore boundary conditions and unusual scenarios:
+```python
+# Test file upload limits and edge cases
+file_upload_ttp = FileUploadTTP(
+    files=["large_file.zip", "empty.txt", "special_chars_名前.pdf"],
+    expected_result=True,  # Should handle various file types
+    size_limits_test=True
+)
+```
 
 ## Getting Started
 
 ### Prerequisites
-
-  * Python 3.8+
-  * Google Chrome
+- Python 3.8+
+- Google Chrome browser
+- Network access for target testing
 
 ### Installation
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/EpykLab/scythe.git
-    cd scythe
-    ```
-2.  Install the dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/EpykLab/scythe.git
+   cd scythe
+   ```
 
-### Usage
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-1.  **Configure a TTP**: In your test script, import the desired TTP and create
-    an instance with the necessary parameters. For example, to use the `LoginBruteforceTTP`:
+3. Verify installation:
+   ```bash
+   python -c "from scythe.core.ttp import TTP; print('✅ Scythe installed successfully')"
+   ```
 
-    ```python
-    from scythe.core.executor import TTPExecutor
-    from scythe.ttps.web.login_bruteforce import LoginBruteforceTTP
-    from scythe.payloads.generators import WordlistPayloadGenerator
-    from scythe.behaviors import HumanBehavior
+## Quick Start Examples
 
-    # Create a payload generator
-    payload_generator = WordlistPayloadGenerator("path/to/your/password_list.txt")
+### 1. Basic Security Testing
 
-    # Create a TTP instance
-    login_bruteforce_ttp = LoginBruteforceTTP(
-        payload_generator=payload_generator,
-        username="testuser",
-        username_selector="#username",
-        password_selector="#password",
-        submit_selector="#submit"
-    )
-
-    # Create a behavior (optional)
-    human_behavior = HumanBehavior(
-        base_delay=2.0,
-        delay_variance=1.0,
-        mouse_movement=True
-    )
-
-    # Create a TTP executor
-    executor = TTPExecutor(
-        ttp=login_bruteforce_ttp,
-        target_url="http://localhost:5000/login",
-        behavior=human_behavior  # Optional parameter
-    )
-
-    # Run the TTP
-    executor.run()
-    ```
-
-2.  **Run the Test**: Execute the Python script to run the TTP.
-
-    ```bash
-    python your_test_script.py
-    ```
-
-3.  **View the Results**: The results of the TTP execution will be logged to
-    the console and to a file named `ttp_test.log`.
-
-## Behaviors
-
-Scythe includes a powerful behavior system that allows you to control how TTPs are executed to make them more realistic and harder to detect. Behaviors control timing, interaction patterns, error handling, and anti-detection techniques.
-
-### Available Behaviors
-
-* **HumanBehavior**: Emulates human-like interaction patterns with variable timing and mouse movements
-* **MachineBehavior**: Provides consistent, predictable timing for automated testing
-* **StealthBehavior**: Uses randomized timing and anti-detection techniques for evasion
-* **DefaultBehavior**: Maintains original TTPExecutor functionality for backward compatibility
-
-### Human Behavior Example
+Test authentication controls with expected failure:
 
 ```python
-from scythe.behaviors import HumanBehavior
+from scythe.core.executor import TTPExecutor
+from scythe.ttps.web.login_bruteforce import LoginBruteforceTTP
 
-# Create human-like behavior
-human_behavior = HumanBehavior(
-    base_delay=3.0,              # Slower, more human-like timing
-    delay_variance=1.5,          # High variance for realism
-    typing_delay=0.1,            # Human-like typing speed
-    mouse_movement=True,         # Enable mouse movements
-    max_consecutive_failures=3   # Give up after 3 failures like a human
+# Create a security test expecting controls to work
+security_test = LoginBruteforceTTP(
+    username="admin",
+    passwords=["password", "123456", "admin"],
+    username_selector="#username",
+    password_selector="#password",
+    submit_selector="#submit",
+    expected_result=False  # We EXPECT security to prevent this
 )
 
-executor = TTPExecutor(
-    ttp=your_ttp,
-    target_url="http://target.com",
-    behavior=human_behavior
-)
-```
-
-### Machine Behavior Example
-
-```python
-from scythe.behaviors import MachineBehavior
-
-# Create machine-like behavior for fast, automated testing
-machine_behavior = MachineBehavior(
-    delay=0.5,           # Fast, consistent timing
-    max_retries=5,       # Systematic retry logic
-    fail_fast=True       # Stop immediately on critical errors
-)
-
-executor = TTPExecutor(
-    ttp=your_ttp,
-    target_url="http://target.com", 
-    behavior=machine_behavior
-)
-```
-
-### Stealth Behavior Example
-
-```python
-from scythe.behaviors import StealthBehavior
-
-# Create stealth behavior for evasion
-stealth_behavior = StealthBehavior(
-    min_delay=5.0,                    # Longer delays to avoid detection
-    max_delay=15.0,                   # High variance in timing
-    burst_probability=0.05,           # Occasional burst activity
-    long_pause_probability=0.2,       # Random long pauses
-    max_requests_per_session=10,      # Limit requests per session
-    session_cooldown=120.0            # Cooldown between sessions
-)
-
-executor = TTPExecutor(
-    ttp=your_ttp,
-    target_url="http://target.com",
-    behavior=stealth_behavior
-)
-```
-
-### Creating Custom Behaviors
-
-```python
-from scythe.behaviors.base import Behavior
-
-class CustomBehavior(Behavior):
-    def __init__(self):
-        super().__init__(
-            name="Custom Behavior",
-            description="My custom behavior implementation"
-        )
-    
-    def get_step_delay(self, step_number: int) -> float:
-        # Custom delay logic
-        return 2.0 if step_number % 2 == 0 else 1.0
-    
-    def should_continue(self, step_number: int, consecutive_failures: int) -> bool:
-        # Custom continuation logic
-        return consecutive_failures < 5
-    
-    def pre_step(self, driver, payload, step_number):
-        print(f"About to execute step {step_number}")
-    
-    # Implement other methods as needed...
-
-# Use your custom behavior
-custom_behavior = CustomBehavior()
-executor = TTPExecutor(ttp=your_ttp, target_url="http://target.com", behavior=custom_behavior)
-```
-
-### Backward Compatibility
-
-The behavior system is completely optional. Existing code continues to work unchanged:
-
-```python
-# This still works exactly as before - no behavior needed
-executor = TTPExecutor(ttp=your_ttp, target_url="http://target.com")
+executor = TTPExecutor(ttp=security_test, target_url="http://app.com/login")
 executor.run()
 ```
 
-For detailed information about behaviors, examples, and advanced usage, see `docs/BEHAVIORS.md` and `examples/behavior_demo.py`.
+### 2. Multi-Step Workflow Testing
+
+Test complex user journeys:
+
+```python
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import NavigateAction, FillFormAction, ClickAction, AssertAction
+from scythe.journeys.executor import JourneyExecutor
+
+# Create comprehensive workflow test
+workflow_test = Journey(
+    name="User Onboarding Flow",
+    description="Complete new user registration and setup process"
+)
+
+# Step 1: Registration
+registration_step = Step("User Registration", "Create new account")
+registration_step.add_action(NavigateAction(url="http://app.com/register"))
+registration_step.add_action(FillFormAction(field_data={
+    "#email": "test.user@example.com",
+    "#password": "SecurePassword123!",
+    "#confirm_password": "SecurePassword123!"
+}))
+registration_step.add_action(ClickAction(selector="#register-button"))
+registration_step.add_action(AssertAction(
+    assertion_type="url_contains",
+    expected_value="verification"
+))
+
+# Step 2: Email Verification (simulated)
+verification_step = Step("Email Verification", "Verify email address")
+verification_step.add_action(NavigateAction(url="http://app.com/verify?token=test_token"))
+verification_step.add_action(AssertAction(
+    assertion_type="page_contains",
+    expected_value="Email verified successfully"
+))
+
+# Step 3: Profile Setup
+profile_step = Step("Profile Setup", "Complete user profile")
+profile_step.add_action(NavigateAction(url="http://app.com/profile/setup"))
+profile_step.add_action(FillFormAction(field_data={
+    "#first_name": "Test",
+    "#last_name": "User",
+    "#company": "Example Corp"
+}))
+profile_step.add_action(ClickAction(selector="#save-profile"))
+
+workflow_test.add_step(registration_step)
+workflow_test.add_step(verification_step)
+workflow_test.add_step(profile_step)
+
+# Execute the workflow
+executor = JourneyExecutor(journey=workflow_test, target_url="http://app.com")
+result = executor.run()
+```
+
+### 3. Load Testing at Scale
+
+Stress test with concurrent users:
+
+```python
+from scythe.orchestrators.scale import ScaleOrchestrator
+from scythe.orchestrators.base import OrchestrationStrategy
+
+# Create high-concurrency load test
+load_test = ScaleOrchestrator(
+    name="Application Load Test",
+    strategy=OrchestrationStrategy.PARALLEL,
+    max_workers=20,
+    ramp_up_delay=0.1  # Gradual ramp-up
+)
+
+# Simulate 500 concurrent users going through checkout process
+result = load_test.orchestrate_journey(
+    journey=checkout_workflow,
+    target_url="http://app.com",
+    replications=500
+)
+
+print(f"Load Test Results:")
+print(f"  Total Users Simulated: {result.total_executions}")
+print(f"  Successful Completions: {result.successful_executions}")
+print(f"  Success Rate: {result.success_rate:.1f}%")
+print(f"  Average Response Time: {result.average_execution_time:.2f}s")
+```
+
+### 4. Global Distributed Testing
+
+Test from multiple geographic locations:
+
+```python
+from scythe.orchestrators.distributed import DistributedOrchestrator, NetworkProxy, CredentialSet
+
+# Define global testing infrastructure
+global_proxies = [
+    NetworkProxy("US-West", proxy_url="proxy-us-west.example.com:8080", location="US-West"),
+    NetworkProxy("US-East", proxy_url="proxy-us-east.example.com:8080", location="US-East"),
+    NetworkProxy("EU-West", proxy_url="proxy-eu-west.example.com:8080", location="EU-West"),
+    NetworkProxy("Asia-Pacific", proxy_url="proxy-ap.example.com:8080", location="Asia-Pacific"),
+    NetworkProxy("South-America", proxy_url="proxy-sa.example.com:8080", location="South-America")
+]
+
+# Different user profiles for realistic testing
+user_profiles = [
+    CredentialSet("premium_user", "premium@example.com", "PremiumPass123"),
+    CredentialSet("basic_user", "basic@example.com", "BasicPass123"),
+    CredentialSet("enterprise_user", "enterprise@example.com", "EnterprisePass123"),
+    CredentialSet("trial_user", "trial@example.com", "TrialPass123")
+]
+
+# Create distributed test orchestrator
+global_test = DistributedOrchestrator(
+    name="Global Performance Assessment",
+    proxies=global_proxies,
+    credentials=user_profiles,
+    proxy_rotation_strategy="round_robin",
+    credential_rotation_strategy="random"
+)
+
+# Execute globally distributed test
+result = global_test.orchestrate_journey(
+    journey=core_application_journey,
+    target_url="http://app.com",
+    replications=100  # Will be distributed across all locations and user types
+)
+
+print(f"Global Test Results:")
+print(f"  Locations Tested: {len(global_proxies)}")
+print(f"  User Profiles: {len(user_profiles)}")
+print(f"  Total Executions: {result.total_executions}")
+print(f"  Geographic Distribution: {result.metadata.get('distribution_stats', {})}")
+```
+
+### 5. Authenticated Complex Testing
+
+Test workflows requiring authentication:
+
+```python
+from scythe.auth.basic import BasicAuth
+from scythe.auth.bearer import BearerTokenAuth
+
+# Basic web application authentication
+web_auth = BasicAuth(
+    username="test_admin",
+    password="admin_password",
+    login_url="http://app.com/admin/login"
+)
+
+# API authentication for backend testing
+api_auth = BearerTokenAuth(
+    token_url="http://api.app.com/auth/token",
+    username="api_user",
+    password="api_secret"
+)
+
+# Create authenticated security test
+admin_security_test = PrivilegeEscalationTTP(
+    target_paths=["/admin/users", "/admin/settings", "/admin/logs"],
+    expected_result=False,  # Should be prevented by access controls
+    authentication=web_auth
+)
+
+# Create authenticated API stress test
+api_stress_test = APIEndpointTTP(
+    endpoints=["/api/users", "/api/reports", "/api/analytics"],
+    request_rate=100,  # 100 requests per second
+    expected_result=True,  # Should handle the load
+    authentication=api_auth
+)
+```
+
+## Advanced Features
+
+### Expected Results System
+
+Scythe uses a unit-testing-style approach to define expected outcomes:
+
+```python
+# Security test - expecting controls to work (test should "fail")
+security_ttp = SecurityTestTTP(
+    attack_vectors=["xss", "sqli", "csrf"],
+    expected_result=False  # We EXPECT security to prevent these
+)
+
+# Performance test - expecting system to handle load (test should "pass")
+performance_ttp = LoadTestTTP(
+    concurrent_users=1000,
+    expected_result=True  # We EXPECT the system to handle this load
+)
+```
+
+**Output Examples:**
+- ✓ **Expected Success**: System handled load as expected
+- ✗ **Unexpected Success**: Security vulnerability found (should have been blocked)
+- ✓ **Expected Failure**: Security controls working properly
+- ✗ **Unexpected Failure**: System failed under expected normal load
+
+### Behavior Patterns
+
+Control how tests execute with realistic behavior patterns:
+
+```python
+from scythe.behaviors import HumanBehavior, MachineBehavior, StealthBehavior
+
+# Human-like testing (realistic user simulation)
+human_behavior = HumanBehavior(
+    base_delay=2.0,           # Natural pause between actions
+    delay_variance=1.0,       # Variation in timing
+    typing_delay=0.1,         # Realistic typing speed
+    error_probability=0.02    # Occasional user mistakes
+)
+
+# Machine testing (consistent, fast execution)
+machine_behavior = MachineBehavior(
+    delay=0.3,               # Fast, consistent timing
+    max_retries=5,           # Systematic retry logic
+    fail_fast=True           # Stop on critical errors
+)
+
+# Stealth testing (avoid detection/rate limiting)
+stealth_behavior = StealthBehavior(
+    min_delay=5.0,                    # Longer delays
+    max_delay=15.0,                   # High variance
+    session_cooldown=60.0,            # Breaks between sessions
+    max_requests_per_session=20       # Limit requests per session
+)
+
+# Apply behavior to any test
+executor = TTPExecutor(
+    ttp=my_test,
+    target_url="http://app.com",
+    behavior=human_behavior  # Use human-like timing
+)
+```
+
+### Custom Test Creation
+
+Extend Scythe for specific testing needs:
+
+```python
+from scythe.core.ttp import TTP
+from scythe.journeys.base import Action
+from typing import Generator, Any
+
+class CustomBusinessLogicTTP(TTP):
+    """Test specific business logic under adverse conditions."""
+    
+    def __init__(self, business_scenarios: list, expected_result: bool = True):
+        super().__init__(
+            name="Business Logic Test",
+            description="Test business logic edge cases",
+            expected_result=expected_result
+        )
+        self.scenarios = business_scenarios
+    
+    def get_payloads(self) -> Generator[Any, None, None]:
+        for scenario in self.scenarios:
+            yield scenario
+    
+    def execute_step(self, driver, payload):
+        # Implement your specific business logic testing
+        # This could involve API calls, database interactions, etc.
+        pass
+    
+    def verify_result(self, driver) -> bool:
+        # Verify the business logic behaved correctly
+        return self.check_business_rules(driver)
+
+class CustomWorkflowAction(Action):
+    """Custom action for specific workflow steps."""
+    
+    def __init__(self, workflow_step: str, parameters: dict):
+        super().__init__(f"Custom {workflow_step}", f"Execute {workflow_step}")
+        self.workflow_step = workflow_step
+        self.parameters = parameters
+    
+    def execute(self, driver, context):
+        # Implement custom workflow logic
+        return self.perform_workflow_step(driver, context)
+```
+
+## Testing Scenarios
+
+### E-commerce Platform Testing
+
+```python
+# Complete e-commerce stress test
+ecommerce_suite = [
+    # Security testing
+    payment_security_test,      # Test payment form security
+    user_data_protection_test,  # Test PII protection
+    session_management_test,    # Test session security
+    
+    # Load testing
+    product_catalog_load_test,  # High-traffic product browsing
+    checkout_process_load_test, # Concurrent checkout processes
+    search_functionality_test,  # Search under load
+    
+    # Workflow testing
+    complete_purchase_journey,  # End-to-end purchase flow
+    return_process_journey,     # Product return workflow
+    account_management_journey  # User account operations
+]
+
+# Execute comprehensive test suite
+orchestrator = ScaleOrchestrator(name="E-commerce Comprehensive Test")
+for test in ecommerce_suite:
+    result = orchestrator.orchestrate_journey(test, target_url="http://shop.com")
+    print(f"{test.name}: {result.success_rate:.1f}% success rate")
+```
+
+### Financial Application Testing
+
+```python
+# High-security financial application testing
+financial_test_suite = Journey("Financial Application Security Assessment")
+
+# Multi-factor authentication testing
+mfa_step = Step("MFA Security Test")
+mfa_step.add_action(TTPAction(ttp=MFABypassTTP(expected_result=False)))
+
+# Transaction integrity testing
+transaction_step = Step("Transaction Integrity Test")
+transaction_step.add_action(TTPAction(ttp=TransactionTamperingTTP(expected_result=False)))
+
+# High-volume transaction testing
+volume_step = Step("Transaction Volume Test")
+volume_step.add_action(TTPAction(ttp=HighVolumeTransactionTTP(
+    transactions_per_second=1000,
+    expected_result=True  # Should handle high volume
+)))
+
+financial_test_suite.add_step(mfa_step)
+financial_test_suite.add_step(transaction_step)
+financial_test_suite.add_step(volume_step)
+```
+
+### Healthcare System Testing
+
+```python
+# HIPAA-compliant healthcare system testing
+healthcare_journey = Journey("Healthcare System Compliance Test")
+
+# Patient data protection
+data_protection_step = Step("Patient Data Protection")
+data_protection_step.add_action(TTPAction(ttp=PatientDataAccessTTP(
+    expected_result=False  # Unauthorized access should be blocked
+)))
+
+# System availability under load
+availability_step = Step("System Availability Test")
+availability_step.add_action(TTPAction(ttp=EmergencyLoadTTP(
+    concurrent_emergency_cases=500,
+    expected_result=True  # System must remain available
+)))
+
+healthcare_journey.add_step(data_protection_step)
+healthcare_journey.add_step(availability_step)
+```
+
+## Reporting and Analysis
+
+### Comprehensive Result Analysis
+
+```python
+# Analyze test results
+def analyze_test_results(orchestration_result):
+    print("="*60)
+    print("COMPREHENSIVE TEST ANALYSIS")
+    print("="*60)
+    
+    print(f"Total Executions: {orchestration_result.total_executions}")
+    print(f"Success Rate: {orchestration_result.success_rate:.1f}%")
+    print(f"Average Execution Time: {orchestration_result.average_execution_time:.2f}s")
+    
+    # Performance metrics
+    if orchestration_result.metadata.get('performance_stats'):
+        stats = orchestration_result.metadata['performance_stats']
+        print(f"Peak Response Time: {stats.get('peak_response_time', 'N/A')}")
+        print(f"95th Percentile: {stats.get('p95_response_time', 'N/A')}")
+    
+    # Geographic distribution (if applicable)
+    if orchestration_result.metadata.get('distribution_stats'):
+        dist = orchestration_result.metadata['distribution_stats']
+        print("Geographic Distribution:")
+        for location, count in dist.get('location_usage', {}).items():
+            print(f"  {location}: {count} executions")
+    
+    # Error analysis
+    if orchestration_result.errors:
+        print(f"\nErrors Encountered: {len(orchestration_result.errors)}")
+        for i, error in enumerate(orchestration_result.errors[:5], 1):
+            print(f"  {i}. {error}")
+    
+    print("="*60)
+
+# Use with any orchestration result
+result = orchestrator.orchestrate_journey(test_journey, "http://app.com", replications=100)
+analyze_test_results(result)
+```
+
+## Best Practices
+
+### 1. Test Design Principles
+
+- **Start with expected outcomes**: Define what success and failure look like
+- **Use realistic data**: Test with data that represents real usage patterns
+- **Consider edge cases**: Test boundary conditions and unusual scenarios
+- **Plan for scale**: Design tests that can scale from single instances to thousands
+
+### 2. Security Testing Guidelines
+
+- **Test security controls**: Verify that protection mechanisms work as expected
+- **Use safe environments**: Never test against production without explicit authorization
+- **Document findings**: Clearly report both expected and unexpected results
+- **Follow responsible disclosure**: Report vulnerabilities through proper channels
+
+### 3. Load Testing Best Practices
+
+- **Gradual ramp-up**: Increase load gradually to identify breaking points
+- **Monitor resources**: Track CPU, memory, and network usage during tests
+- **Test realistic scenarios**: Use actual user workflows, not just simple requests
+- **Plan for cleanup**: Ensure test data doesn't impact production systems
+
+### 4. Distributed Testing Considerations
+
+- **Network latency**: Account for geographic differences in network performance
+- **Time zones**: Consider when testing across global user bases
+- **Legal compliance**: Ensure testing complies with local laws and regulations
+- **Resource limits**: Respect proxy and network provider usage limits
 
 ## Contributing
 
-Contributions are welcome\! Please see the `DEVELOPER_GUIDE.md` for more
-information on how to contribute to the project.
+We welcome contributions to Scythe! Whether you're adding new test types, improving orchestration capabilities, or enhancing documentation, your contributions help make Scythe better for everyone.
+
+### How to Contribute
+
+1. **Fork the repository** and create a feature branch
+2. **Write tests** for new functionality
+3. **Follow coding standards** and include documentation
+4. **Submit a pull request** with a clear description of changes
+
+### Areas for Contribution
+
+- **New TTP implementations** for specific security tests
+- **Additional Journey actions** for workflow testing
+- **Custom orchestration strategies** for specialized scenarios
+- **Enhanced reporting** and analysis capabilities
+- **Integration adapters** for popular testing tools
+- **Documentation improvements** and examples
 
 ## License
 
-This project is licensed under the MIT License. See the `LICENSE` file for more
-details.
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
-# DEVELOPER GUIDE
+## Architecture
 
-This guide provides instructions for developers who want to contribute to the
-Scythe framework by creating new TTPs.
-
-## Core Concepts
-
-The Scythe framework is built around a few core concepts:
-
-  * **TTP (Tactic, Technique, and Procedure)**: A TTP is a single test that
-  emulates a specific attacker behavior. Each TTP is a Python class that
-  inherits from the `TTP` abstract base class.
-  * **Payload Generator**: A payload generator is a class that generates
-  payloads for a TTP. The framework provides two types of payload generators:
-  `WordlistPayloadGenerator` and `StaticPayloadGenerator`.
-  * **TTP Executor**: The `TTPExecutor` is the main engine for running TTP
-  tests. It takes a TTP instance and a target URL as input and executes the TTP
-  against the target.
-
-## Creating a New TTP
-
-To create a new TTP, you need to create a new Python class that inherits from
-the `TTP` abstract base class and implements the following methods:
-
-  * `get_payloads(self)`: This method should yield payloads for the test execution.
-  * `execute_step(self, driver: WebDriver, payload: Any)`: This method executes
-  a single test action using the provided payload. This method should perform
-  the action (e.g., fill form, click button).
-  * `verify_result(self, driver: WebDriver) -> bool`: This method verifies the
-  outcome of the executed step. It should return `True` if the test indicates a
-  potential success/vulnerability, and `False` otherwise.
-
-### Example TTP: SQL Injection
-
-Here is an example of a simple SQL injection TTP:
-
-```python
-from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webdriver import WebDriver
-from scythe.core.ttp import TTP
-from scythe.payloads.generators import StaticPayloadGenerator
-
-class SQLInjectionTTP(TTP):
-    def __init__(self, target_url: str):
-        super().__init__(
-            name="SQL Injection",
-            description="Tests for basic SQL injection vulnerabilities."
-        )
-        self.target_url = target_url
-        self.payload_generator = StaticPayloadGenerator([
-            "' OR '1'='1",
-            "' OR '1'='1' --",
-            "' OR 1=1 --",
-        ])
-
-    def get_payloads(self):
-        yield from self.payload_generator()
-
-    def execute_step(self, driver: WebDriver, payload: str):
-        # Assumes a search input with the name 'q'
-        driver.get(f"{self.target_url}?q={payload}")
-
-    def verify_result(self, driver: WebDriver) -> bool:
-        # A simple check for a generic SQL error message
-        return "sql" in driver.page_source.lower() or \
-               "syntax" in driver.page_source.lower()
+Scythe's modular architecture enables flexible testing scenarios:
 
 ```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│     TTPs        │    │    Journeys     │    │  Orchestrators  │
+│                 │    │                 │    │                 │
+│ • Security Tests│    │ • Multi-step    │    │ • Scale Testing │
+│ • Logic Tests   │    │ • Workflows     │    │ • Distribution  │
+│ • Edge Cases    │    │ • User Stories  │    │ • Batch Runs    │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                    ┌─────────────────┐
+                    │   Core Engine   │
+                    │                 │
+                    │ • Execution     │
+                    │ • Authentication│
+                    │ • Behaviors     │
+                    │ • Reporting     │
+                    └─────────────────┘
+```
 
-## Coding Conventions
+### Core Components
 
-Please follow these coding conventions when contributing to the Scythe framework:
+- **Core Engine**: Execution framework, authentication, and behavior management
+- **TTPs**: Individual test procedures for specific scenarios
+- **Journeys**: Multi-step workflows combining multiple actions
+- **Orchestrators**: Scale and distribution management for large test runs
+- **Behaviors**: Execution timing and pattern control
+- **Authentication**: Session management and user simulation
+- **Reporting**: Comprehensive result analysis and metrics
 
-  * All code should be formatted using the Black code formatter.
-  * Type hints should be used for all function signatures.
-  * Docstrings should be included for all modules, classes, and functions.
-  * Follow the PEP 8 style guide for Python code.
+This architecture supports testing scenarios from simple security checks to complex, distributed, multi-user workflow validation at massive scale.
 
-By following these guidelines, you can help ensure that the Scythe framework
-remains a high-quality and maintainable project.
+---
+
+**Scythe**: Comprehensive adverse conditions testing for robust, reliable systems.
