@@ -49,6 +49,7 @@ Scythe operates on the principle that robust systems must be tested under advers
 ### 📊 **Professional Reporting**
 * **Clear Result Indicators**: ✓ Expected outcomes, ✗ Unexpected results
 * **Comprehensive Logging**: Detailed execution tracking and analysis
+* **Version Detection**: Automatic extraction of X-SCYTHE-TARGET-VERSION headers
 * **Performance Metrics**: Timing, success rates, and resource utilization
 * **Execution Statistics**: Detailed reporting across all test types
 
@@ -395,6 +396,74 @@ executor = TTPExecutor(
     behavior=human_behavior  # Use human-like timing
 )
 ```
+
+### Version Detection
+
+Scythe automatically captures the `X-SCYTHE-TARGET-VERSION` header from HTTP responses to track which version of your web application is being tested:
+
+```python
+from scythe.core.ttp import TTP
+from scythe.core.executor import TTPExecutor
+
+# Your web application should set this header:
+# X-SCYTHE-TARGET-VERSION: 1.3.2
+
+class MyTTP(TTP):
+    def get_payloads(self):
+        yield "test_payload"
+    
+    def execute_step(self, driver, payload):
+        driver.get("http://your-app.com/login")
+        # ... test logic ...
+    
+    def verify_result(self, driver):
+        return "welcome" in driver.page_source
+
+# Run the test
+ttp = MyTTP("Version Test", "Test with version detection")
+executor = TTPExecutor(ttp=ttp, target_url="http://your-app.com")
+executor.run()
+```
+
+**Output includes version information:**
+```
+✓ EXPECTED SUCCESS: 'test_payload' | Version: 1.3.2
+Target Version Summary:
+  Results with version info: 1/1
+  Version 1.3.2: 1 result(s)
+```
+
+**Server-side implementation examples:**
+```python
+# Python/Flask
+@app.after_request
+def add_version_header(response):
+    response.headers['X-SCYTHE-TARGET-VERSION'] = '1.3.2'
+    return response
+
+# Node.js/Express
+app.use((req, res, next) => {
+    res.set('X-SCYTHE-TARGET-VERSION', '1.3.2');
+    next();
+});
+
+# Java/Spring Boot
+@Component
+public class VersionHeaderFilter implements Filter {
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) {
+        HttpServletResponse httpResponse = (HttpServletResponse) response;
+        httpResponse.setHeader("X-SCYTHE-TARGET-VERSION", "1.3.2");
+        chain.doFilter(request, response);
+    }
+}
+```
+
+This feature helps you:
+- **Track test results** by application version
+- **Verify deployment status** during testing
+- **Correlate issues** with specific software versions
+- **Ensure consistency** across test environments
 
 ### Custom Test Creation
 

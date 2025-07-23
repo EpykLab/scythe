@@ -5,6 +5,7 @@ from selenium.webdriver.chrome.options import Options
 from .ttp import TTP
 from typing import Optional
 from ..behaviors.base import Behavior
+from .headers import HeaderExtractor
 
 # Configure logging
 logging.basicConfig(
@@ -33,8 +34,12 @@ class TTPExecutor:
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
 
+        # Enable header extraction capabilities
+        HeaderExtractor.enable_logging_for_driver(self.chrome_options)
+
         self.driver = None
         self.results = []
+        self.header_extractor = HeaderExtractor()
 
     def _setup_driver(self):
         """Initializes the WebDriver."""
@@ -108,13 +113,27 @@ class TTPExecutor:
                     if success:
                         consecutive_failures = 0
                         current_url = self.driver.current_url if self.driver else "unknown"
-                        result_entry = {'payload': payload, 'url': current_url, 'expected': self.ttp.expected_result, 'actual': True}
+                        
+                        # Extract target version header
+                        target_version = None
+                        if self.driver:
+                            target_version = self.header_extractor.extract_target_version(self.driver, self.target_url)
+                        
+                        result_entry = {
+                            'payload': payload, 
+                            'url': current_url, 
+                            'expected': self.ttp.expected_result, 
+                            'actual': True,
+                            'target_version': target_version
+                        }
                         self.results.append(result_entry)
                         
                         if self.ttp.expected_result:
-                            self.logger.info(f"EXPECTED SUCCESS: '{payload}'")
+                            version_info = f" | Version: {target_version}" if target_version else ""
+                            self.logger.info(f"EXPECTED SUCCESS: '{payload}'{version_info}")
                         else:
-                            self.logger.warning(f"UNEXPECTED SUCCESS: '{payload}' (expected to fail)")
+                            version_info = f" | Version: {target_version}" if target_version else ""
+                            self.logger.warning(f"UNEXPECTED SUCCESS: '{payload}' (expected to fail){version_info}")
                     else:
                         consecutive_failures += 1
                         if self.ttp.expected_result:
@@ -168,12 +187,26 @@ class TTPExecutor:
             if expected_successes:
                 self.logger.info(f"Expected successes: {len(expected_successes)}")
                 for result in expected_successes:
-                    self.logger.info(f"  ✓ Payload: {result['payload']} | URL: {result['url']}")
+                    version_info = f" | Version: {result['target_version']}" if result.get('target_version') else ""
+                    self.logger.info(f"  ✓ Payload: {result['payload']} | URL: {result['url']}{version_info}")
             
             if unexpected_successes:
                 self.logger.warning(f"Unexpected successes: {len(unexpected_successes)}")
                 for result in unexpected_successes:
-                    self.logger.warning(f"  ✗ Payload: {result['payload']} | URL: {result['url']}")
+                    version_info = f" | Version: {result['target_version']}" if result.get('target_version') else ""
+                    self.logger.warning(f"  ✗ Payload: {result['payload']} | URL: {result['url']}{version_info}")
+            
+            # Display version summary
+            version_summary = self.header_extractor.get_version_summary(self.results)
+            if version_summary['results_with_version'] > 0:
+                self.logger.info("\nTarget Version Summary:")
+                self.logger.info(f"  Results with version info: {version_summary['results_with_version']}/{version_summary['total_results']}")
+                if version_summary['unique_versions']:
+                    for version in version_summary['unique_versions']:
+                        count = version_summary['version_counts'][version]
+                        self.logger.info(f"  Version {version}: {count} result(s)")
+            else:
+                self.logger.info("\nNo X-SCYTHE-TARGET-VERSION headers detected in responses.")
         else:
             if self.ttp.expected_result:
                 self.logger.info("No successes detected (expected to find vulnerabilities).")

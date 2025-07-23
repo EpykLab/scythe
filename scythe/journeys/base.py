@@ -276,6 +276,10 @@ class Journey:
         logger.info(f"Description: {self.description}")
         logger.info(f"Steps: {len(self.steps)}")
         
+        # Import here to avoid circular imports
+        from ..core.headers import HeaderExtractor
+        header_extractor = HeaderExtractor()
+        
         start_time = time.time()
         
         # Set initial context
@@ -297,7 +301,9 @@ class Journey:
             'overall_success': False,
             'execution_time': 0,
             'step_results': [],
-            'errors': []
+            'errors': [],
+            'target_versions': [],
+            'version_summary': {}
         }
         
         try:
@@ -335,6 +341,12 @@ class Journey:
                         else:
                             results['actions_failed'] += 1
                     
+                    # Extract target version header after step execution
+                    target_version = header_extractor.extract_target_version(driver, target_url)
+                    if target_version:
+                        results['target_versions'].append(target_version)
+                        logger.info(f"Target version detected: {target_version}")
+                    
                     # Store step results
                     step_result = {
                         'step_name': step.name,
@@ -342,7 +354,8 @@ class Journey:
                         'expected': step.expected_result,
                         'actual': step_success,
                         'actions': step.execution_results.copy(),
-                        'step_data': step.step_data.copy()
+                        'step_data': step.step_data.copy(),
+                        'target_version': target_version
                     }
                     results['step_results'].append(step_result)
                     
@@ -367,6 +380,12 @@ class Journey:
             end_time = time.time()
             results['end_time'] = end_time
             results['execution_time'] = end_time - start_time
+            
+            # Generate version summary
+            if results['target_versions']:
+                version_summary = header_extractor.get_version_summary([{'target_version': v} for v in results['target_versions']])
+                results['version_summary'] = version_summary
+                logger.info(f"Target versions detected: {list(set(results['target_versions']))}")
             
             logger.info(f"Journey completed in {results['execution_time']:.2f} seconds")
             logger.info(f"Overall success: {results['overall_success']}")

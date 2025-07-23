@@ -282,7 +282,10 @@ class TestFeatureIntegration(unittest.TestCase):
 
         self.assertEqual(len(journey.steps), 1)
         self.assertEqual(len(journey.steps[0].actions), 1)
-        self.assertTrue(journey.steps[0].actions[0].ttp.requires_authentication())
+        # Type assertion to help type checker understand this is a TTPAction
+        ttp_action_instance = journey.steps[0].actions[0]
+        assert isinstance(ttp_action_instance, TTPAction)
+        self.assertTrue(ttp_action_instance.ttp.requires_authentication())
 
     def test_orchestrator_with_journey_and_auth(self):
         """Test orchestrator running journey with authentication."""

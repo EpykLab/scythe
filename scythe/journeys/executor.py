@@ -5,6 +5,7 @@ from selenium.webdriver.chrome.options import Options
 from typing import Optional, Dict, Any, List
 from ..behaviors.base import Behavior
 from .base import Journey
+from ..core.headers import HeaderExtractor
 
 # Configure logging
 logging.basicConfig(
@@ -64,8 +65,12 @@ class JourneyExecutor:
                 else:
                     self.chrome_options.add_argument(f"--{key}={value}")
         
+        # Enable header extraction capabilities
+        HeaderExtractor.enable_logging_for_driver(self.chrome_options)
+        
         self.driver = None
         self.execution_results = None
+        self.header_extractor = HeaderExtractor()
     
     def _setup_driver(self):
         """Initialize the WebDriver."""
@@ -297,13 +302,29 @@ class JourneyExecutor:
                 step_success = step_result.get('actual', False)
                 step_expected = step_result.get('expected', True)
                 actions = step_result.get('actions', [])
+                target_version = step_result.get('target_version')
                 
                 status = "✓" if step_success == step_expected else "✗"
                 result_text = "SUCCESS" if step_success else "FAILURE"
                 expected_text = "expected" if step_success == step_expected else "unexpected"
+                version_info = f" | Version: {target_version}" if target_version else ""
                 
-                self.logger.info(f"  {status} Step {i}: {step_name} - {result_text} ({expected_text})")
+                self.logger.info(f"  {status} Step {i}: {step_name} - {result_text} ({expected_text}){version_info}")
                 self.logger.info(f"    Actions: {len([a for a in actions if a.get('actual', False)])}/{len(actions)} succeeded")
+        
+        # Version summary
+        target_versions = self.execution_results.get('target_versions', [])
+        
+        if target_versions:
+            self.logger.info("\nTarget Version Summary:")
+            self.logger.info(f"  Steps with version info: {len(target_versions)}/{len(step_results) if step_results else 0}")
+            unique_versions = list(set(target_versions))
+            if unique_versions:
+                for version in unique_versions:
+                    count = target_versions.count(version)
+                    self.logger.info(f"  Version {version}: {count} step(s)")
+        else:
+            self.logger.info("\nNo X-SCYTHE-TARGET-VERSION headers detected in responses.")
         
         self.logger.info("="*60)
     
