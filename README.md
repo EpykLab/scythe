@@ -122,6 +122,26 @@ file_upload_ttp = FileUploadTTP(
 
 ### Installation
 
+#### If you would like to use as a library:
+
+setup the virtual environment
+```bash
+python3 -m venv venv
+
+# source the venv
+# bash,zsh: source venv/bin/activate
+# fish: source venv/bin/activate.fish
+```
+
+install the package
+```bash
+# in an activated venv
+
+pip3 install scythe-ttp
+```
+
+#### If you would like like to contribute:
+
 1. Clone the repository:
    ```bash
    git clone https://github.com/EpykLab/scythe.git
@@ -411,11 +431,11 @@ from scythe.core.executor import TTPExecutor
 class MyTTP(TTP):
     def get_payloads(self):
         yield "test_payload"
-    
+
     def execute_step(self, driver, payload):
         driver.get("http://your-app.com/login")
         # ... test logic ...
-    
+
     def verify_result(self, driver):
         return "welcome" in driver.page_source
 
@@ -476,7 +496,7 @@ from typing import Generator, Any
 
 class CustomBusinessLogicTTP(TTP):
     """Test specific business logic under adverse conditions."""
-    
+
     def __init__(self, business_scenarios: list, expected_result: bool = True):
         super().__init__(
             name="Business Logic Test",
@@ -484,28 +504,28 @@ class CustomBusinessLogicTTP(TTP):
             expected_result=expected_result
         )
         self.scenarios = business_scenarios
-    
+
     def get_payloads(self) -> Generator[Any, None, None]:
         for scenario in self.scenarios:
             yield scenario
-    
+
     def execute_step(self, driver, payload):
         # Implement your specific business logic testing
         # This could involve API calls, database interactions, etc.
         pass
-    
+
     def verify_result(self, driver) -> bool:
         # Verify the business logic behaved correctly
         return self.check_business_rules(driver)
 
 class CustomWorkflowAction(Action):
     """Custom action for specific workflow steps."""
-    
+
     def __init__(self, workflow_step: str, parameters: dict):
         super().__init__(f"Custom {workflow_step}", f"Execute {workflow_step}")
         self.workflow_step = workflow_step
         self.parameters = parameters
-    
+
     def execute(self, driver, context):
         # Implement custom workflow logic
         return self.perform_workflow_step(driver, context)
@@ -522,12 +542,12 @@ ecommerce_suite = [
     payment_security_test,      # Test payment form security
     user_data_protection_test,  # Test PII protection
     session_management_test,    # Test session security
-    
+
     # Load testing
     product_catalog_load_test,  # High-traffic product browsing
     checkout_process_load_test, # Concurrent checkout processes
     search_functionality_test,  # Search under load
-    
+
     # Workflow testing
     complete_purchase_journey,  # End-to-end purchase flow
     return_process_journey,     # Product return workflow
@@ -600,30 +620,30 @@ def analyze_test_results(orchestration_result):
     print("="*60)
     print("COMPREHENSIVE TEST ANALYSIS")
     print("="*60)
-    
+
     print(f"Total Executions: {orchestration_result.total_executions}")
     print(f"Success Rate: {orchestration_result.success_rate:.1f}%")
     print(f"Average Execution Time: {orchestration_result.average_execution_time:.2f}s")
-    
+
     # Performance metrics
     if orchestration_result.metadata.get('performance_stats'):
         stats = orchestration_result.metadata['performance_stats']
         print(f"Peak Response Time: {stats.get('peak_response_time', 'N/A')}")
         print(f"95th Percentile: {stats.get('p95_response_time', 'N/A')}")
-    
+
     # Geographic distribution (if applicable)
     if orchestration_result.metadata.get('distribution_stats'):
         dist = orchestration_result.metadata['distribution_stats']
         print("Geographic Distribution:")
         for location, count in dist.get('location_usage', {}).items():
             print(f"  {location}: {count} executions")
-    
+
     # Error analysis
     if orchestration_result.errors:
         print(f"\nErrors Encountered: {len(orchestration_result.errors)}")
         for i, error in enumerate(orchestration_result.errors[:5], 1):
             print(f"  {i}. {error}")
-    
+
     print("="*60)
 
 # Use with any orchestration result
