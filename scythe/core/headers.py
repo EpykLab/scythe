@@ -1,5 +1,6 @@
 import json
 import logging
+import requests
 from typing import Optional, Dict, Any
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.chrome.options import Options
@@ -32,6 +33,157 @@ class HeaderExtractor:
         chrome_options.add_argument("--enable-logging")
         chrome_options.add_argument("--log-level=0")
         chrome_options.set_capability("goog:loggingPrefs", {"performance": "ALL"})
+
+    def banner_grab(self, url: str, timeout: int = 10, method: str = "HEAD") -> Optional[str]:
+        """
+        Perform a simple HTTP request to extract the X-SCYTHE-TARGET-VERSION header.
+        
+        This is a more reliable alternative to Selenium's performance logging
+        for cases where you just need to grab headers.
+        
+        Args:
+            url: URL to make the request to
+            timeout: Request timeout in seconds
+            method: HTTP method to use ("HEAD" or "GET")
+            
+        Returns:
+            Version string if header found, None otherwise
+        """
+        try:
+            self.logger.debug(f"Making {method} request to {url} for header extraction")
+            
+            # Use HEAD by default for efficiency, fallback to GET if needed
+            if method.upper() == "HEAD":
+                response = requests.head(url, timeout=timeout, allow_redirects=True)
+            else:
+                response = requests.get(url, timeout=timeout, allow_redirects=True)
+            
+            # Check if request was successful
+            response.raise_for_status()
+            
+            # Look for the version header (case-insensitive)
+            version = self._find_version_header(dict(response.headers))
+            if version:
+                self.logger.debug(f"Found target version '{version}' via {method} request to {url}")
+                return version
+            else:
+                self.logger.debug(f"No X-SCYTHE-TARGET-VERSION header found in response from {url}")
+                return None
+                
+        except requests.exceptions.RequestException as e:
+            self.logger.warning(f"Failed to make {method} request to {url}: {e}")
+            return None
+        except Exception as e:
+            self.logger.warning(f"Unexpected error during banner grab: {e}")
+            return None
+
+    def get_all_headers_via_request(self, url: str, timeout: int = 10, method: str = "HEAD") -> Dict[str, str]:
+        """
+        Get all headers from a simple HTTP request.
+        
+        Args:
+            url: URL to make the request to
+            timeout: Request timeout in seconds
+            method: HTTP method to use ("HEAD" or "GET")
+            
+        Returns:
+            Dictionary of all response headers
+        """
+        try:
+            self.logger.debug(f"Making {method} request to {url} for all headers")
+            
+            if method.upper() == "HEAD":
+                response = requests.head(url, timeout=timeout, allow_redirects=True)
+            else:
+                response = requests.get(url, timeout=timeout, allow_redirects=True)
+                
+            response.raise_for_status()
+            
+            # Convert headers to regular dict with string values
+            return {k: str(v) for k, v in response.headers.items()}
+            
+        except requests.exceptions.RequestException as e:
+            self.logger.warning(f"Failed to get headers from {url}: {e}")
+            return {}
+        except Exception as e:
+            self.logger.warning(f"Unexpected error getting headers: {e}")
+            return {}
+
+    def debug_headers(self, url: str, timeout: int = 10) -> None:
+        """
+        Debug method to print all headers received from a URL.
+        
+        This is useful for troubleshooting when headers aren't being detected properly.
+        It will show you exactly what headers the server is sending.
+        
+        Args:
+            url: URL to make the request to
+            timeout: Request timeout in seconds
+        """
+        print(f"\n{'='*60}")
+        print(f"DEBUG: Header dump for {url}")
+        print(f"{'='*60}")
+        
+        try:
+            # Try HEAD request first
+            print("\n--- HEAD Request ---")
+            response = requests.head(url, timeout=timeout, allow_redirects=True)
+            print(f"Status Code: {response.status_code}")
+            print(f"Headers ({len(response.headers)} total):")
+            
+            for name, value in response.headers.items():
+                print(f"  {name}: {value}")
+                if "scythe" in name.lower() or "version" in name.lower():
+                    print("    *** POTENTIAL VERSION HEADER ***")
+            
+            # Try GET request
+            print("\n--- GET Request ---")
+            response = requests.get(url, timeout=timeout, allow_redirects=True)
+            print(f"Status Code: {response.status_code}")
+            print(f"Headers ({len(response.headers)} total):")
+            
+            for name, value in response.headers.items():
+                print(f"  {name}: {value}")
+                if "scythe" in name.lower() or "version" in name.lower():
+                    print("    *** POTENTIAL VERSION HEADER ***")
+            
+            # Check specifically for the target header
+            version = self._find_version_header(dict(response.headers))
+            print(f"\nTarget version extraction result: {version}")
+            
+        except Exception as e:
+            print(f"ERROR: Failed to debug headers: {e}")
+        
+        print(f"{'='*60}\n")
+
+    def extract_target_version_hybrid(self, driver: WebDriver, target_url: Optional[str] = None) -> Optional[str]:
+        """
+        Hybrid approach: Try banner grab first, then fall back to Selenium performance logs.
+        
+        This method attempts to get the version header using a simple HTTP request first,
+        which is more reliable than Selenium's performance logging. If that fails or no
+        target_url is provided, it falls back to the Selenium-based extraction.
+        
+        Args:
+            driver: WebDriver instance
+            target_url: URL to check (required for banner grab method)
+            
+        Returns:
+            Version string if header found, None otherwise
+        """
+        # Try banner grab first if we have a target URL
+        if target_url:
+            self.logger.debug("Attempting banner grab method first")
+            version = self.banner_grab(target_url)
+            if version:
+                self.logger.debug(f"Successfully extracted version '{version}' via banner grab")
+                return version
+            else:
+                self.logger.debug("Banner grab failed, falling back to Selenium performance logs")
+        
+        # Fall back to Selenium performance logs
+        self.logger.debug("Using Selenium performance logs method")
+        return self.extract_target_version(driver, target_url)
 
     def extract_target_version(self, driver: WebDriver, target_url: Optional[str] = None) -> Optional[str]:
         """
