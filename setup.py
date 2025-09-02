@@ -8,7 +8,7 @@ with open("./requirements.txt", "r", encoding="utf-8") as f:
 
 setuptools.setup(
     name="scythe-ttp",
-    version="0.12.5",
+    version="0.13.0",
     author="EpykLab",
     author_email="cyber@epyklab.com",
     description="An extensible framework for emulating attacker TTPs with Selenium.",
