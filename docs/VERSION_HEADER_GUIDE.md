@@ -480,3 +480,16 @@ python examples/test_server_with_version.py 8080 1.3.2
 # Run example tests (in another terminal)
 python examples/version_header_example.py http://localhost:8080
 ```
+
+
+
+## Hybrid Version Extraction (New)
+
+Starting with the API mode addition, HeaderExtractor includes a hybrid helper that first attempts a direct HTTP request to capture headers, then falls back to Selenium performance logs if a WebDriver is present.
+
+- Method: HeaderExtractor.extract_target_version_hybrid(driver, target_url)
+- Behavior:
+  - If target_url is provided, performs a lightweight banner grab (HEAD by default) to look for X-SCYTHE-TARGET-VERSION.
+  - If not found, or when no target_url is given, falls back to extract_target_version using Selenium network logs.
+
+This approach improves reliability when you simply need headers (like target version) and are running in API mode without a browser.

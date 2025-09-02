@@ -790,3 +790,39 @@ class ThirdPartyIntegrationTTP(TTP):
             driver.find_element_by_css_selector("#test-event").send_keys("page_view")
         
         driver.find_element_by_css_selector("#test-integration").click
+
+
+## API Smoke Checks (No Browser)
+
+Run fast health checks and backend validations without launching a browser by using JourneyExecutor in API mode together with ApiRequestAction.
+
+Example:
+
+```python
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+# Optional: from scythe.auth.bearer import BearerTokenAuth
+
+step = Step(
+    name="Health",
+    description="GET /api/health returns 200",
+    actions=[ApiRequestAction(method="GET", url="/api/health", expected_status=200)],
+)
+
+journey = Journey(
+    name="API Smoke",
+    description="Simple API smoke test",
+    steps=[step],
+    # authentication=BearerTokenAuth(token="YOUR_TOKEN")  # optional
+)
+
+executor = JourneyExecutor(journey=journey, target_url="http://localhost:8080", mode="API")
+results = executor.run()
+print("Overall success:", results.get("overall_success"))
+```
+
+Notes:
+- No Chrome/ChromeDriver required in API mode.
+- Authentication headers are merged into a shared requests.Session when provided via get_auth_headers().
+- Version detection uses a hybrid approach; see VERSION_HEADER_GUIDE.md and HeaderExtractor.extract_target_version_hybrid.

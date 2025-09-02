@@ -7,7 +7,7 @@ or other custom actions like navigation, form filling, etc.
 """
 
 from .base import Journey, Step, Action
-from .actions import NavigateAction, ClickAction, FillFormAction, WaitAction, TTPAction
+from .actions import NavigateAction, ClickAction, FillFormAction, WaitAction, TTPAction, ApiRequestAction
 from .executor import JourneyExecutor
 
 __all__ = [
@@ -19,5 +19,6 @@ __all__ = [
     'FillFormAction', 
     'WaitAction',
     'TTPAction',
+    'ApiRequestAction',
     'JourneyExecutor'
 ]

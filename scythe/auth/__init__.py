@@ -8,9 +8,11 @@ authenticate before executing their main functionality.
 from .base import Authentication
 from .bearer import BearerTokenAuth
 from .basic import BasicAuth
+from .cookie_jwt import CookieJWTAuth
 
 __all__ = [
     'Authentication',
     'BearerTokenAuth', 
-    'BasicAuth'
+    'BasicAuth',
+    'CookieJWTAuth',
 ]

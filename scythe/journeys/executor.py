@@ -3,6 +3,7 @@ import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from typing import Optional, Dict, Any, List
+import requests
 from ..behaviors.base import Behavior
 from .base import Journey
 from ..core.headers import HeaderExtractor
@@ -24,6 +25,10 @@ class JourneyExecutor:
     
     Similar to TTPExecutor but designed for complex multi-step scenarios
     involving journeys composed of steps and actions.
+    
+    Supports two interaction modes:
+      - UI: browser-driven via Selenium (default, backward-compatible)
+      - API: REST-driven via requests without starting a browser
     """
     
     def __init__(self, 
@@ -31,7 +36,8 @@ class JourneyExecutor:
                  target_url: str, 
                  headless: bool = True, 
                  behavior: Optional[Behavior] = None,
-                 driver_options: Optional[Dict[str, Any]] = None):
+                 driver_options: Optional[Dict[str, Any]] = None,
+                 mode: str = "UI"):
         """
         Initialize the Journey executor.
         
@@ -45,6 +51,7 @@ class JourneyExecutor:
         self.journey = journey
         self.target_url = target_url
         self.behavior = behavior
+        self.mode = (mode or "UI").upper()
         self.logger = logging.getLogger(f"Journey.{self.journey.name}")
         
         # Setup Chrome options
@@ -108,29 +115,62 @@ class JourneyExecutor:
             self.logger.info(f"Using behavior: {self.behavior.name}")
             self.logger.info(f"Behavior description: {self.behavior.description}")
         
-        self._setup_driver()
-        
         try:
-            # Pre-execution behavior setup
-            if self.behavior and self.driver:
-                self.behavior.pre_execution(self.driver, self.target_url)
-            
-            # Execute the journey
-            if self.driver:
-                self.execution_results = self.journey.execute(self.driver, self.target_url)
+            if self.mode == 'API':
+                # API mode: no WebDriver, prepare requests session and context
+                session = requests.Session()
+                auth_headers = {}
+                auth_cookies = {}
+                if getattr(self.journey, 'authentication', None):
+                    # Try to obtain headers/cookies directly (no browser flow)
+                    try:
+                        auth_headers = self.journey.authentication.get_auth_headers() or {}
+                    except Exception as e:
+                        self.logger.warning(f"Failed to get auth headers from authentication: {e}")
+                    try:
+                        if hasattr(self.journey.authentication, 'get_auth_cookies'):
+                            auth_cookies = self.journey.authentication.get_auth_cookies() or {}
+                    except Exception as e:
+                        self.logger.warning(f"Failed to get auth cookies from authentication: {e}")
+                if auth_headers:
+                    session.headers.update(auth_headers)
+                if auth_cookies:
+                    for ck, cv in auth_cookies.items():
+                        try:
+                            session.cookies.set(ck, cv)
+                        except Exception:
+                            pass
+                
+                # Seed journey context for API actions
+                self.journey.set_context('mode', 'API')
+                self.journey.set_context('requests_session', session)
+                self.journey.set_context('auth_headers', auth_headers)
+                self.journey.set_context('auth_cookies', auth_cookies)
+                
+                # Execute journey with a None driver (API actions ignore driver)
+                self.execution_results = self.journey.execute(None, self.target_url)
             else:
-                raise RuntimeError("WebDriver not initialized")
-            
-            # Apply behavior timing between steps if configured
-            if self.behavior:
-                # Let behavior influence the journey execution
-                self._apply_behavior_to_journey()
-            
-            # Post-execution behavior cleanup
-            if self.behavior and self.driver:
-                # Convert journey results to format expected by behavior
-                behavior_results = self._convert_results_for_behavior()
-                self.behavior.post_execution(self.driver, behavior_results)
+                # UI mode (default)
+                self._setup_driver()
+                
+                # Pre-execution behavior setup
+                if self.behavior and self.driver:
+                    self.behavior.pre_execution(self.driver, self.target_url)
+                
+                # Execute the journey
+                if self.driver:
+                    self.execution_results = self.journey.execute(self.driver, self.target_url)
+                else:
+                    raise RuntimeError("WebDriver not initialized")
+                
+                # Apply behavior timing between steps if configured
+                if self.behavior:
+                    self._apply_behavior_to_journey()
+                
+                # Post-execution behavior cleanup
+                if self.behavior and self.driver:
+                    behavior_results = self._convert_results_for_behavior()
+                    self.behavior.post_execution(self.driver, behavior_results)
         
         except KeyboardInterrupt:
             self.logger.info("Journey interrupted by user.")
@@ -143,6 +183,7 @@ class JourneyExecutor:
                 self.execution_results = self._create_error_results(str(e))
         
         finally:
+            # Cleanup and print summary (driver quit only if initialized)
             self._cleanup()
         
         return self.execution_results

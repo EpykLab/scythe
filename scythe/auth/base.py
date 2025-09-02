@@ -80,6 +80,15 @@ class Authentication(ABC):
         """
         return {}
     
+    def get_auth_cookies(self) -> Dict[str, str]:
+        """
+        Get authentication cookies that should be set for API requests.
+        
+        Returns:
+            Dictionary mapping cookie name to cookie value.
+        """
+        return {}
+    
     def store_auth_data(self, key: str, value: Any) -> None:
         """
         Store authentication-related data.

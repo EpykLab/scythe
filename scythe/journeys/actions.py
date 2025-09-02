@@ -5,6 +5,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+import requests
 
 from .base import Action
 from ..core.ttp import TTP
@@ -644,3 +645,125 @@ class AssertAction(Action):
         if by_method is None:
             raise ValueError(f"Unsupported selector type: {self.selector_type}")
         return by_method
+
+class ApiRequestAction(Action):
+    """Action to perform a REST API request in Journey API mode.
+    
+    This action ignores the WebDriver and uses a requests.Session provided
+    in the journey context under the key 'requests_session'. It merges any
+    'auth_headers' from the context into the request headers.
+    Optionally, it can validate and parse the JSON response using a Pydantic
+    model class when provided.
+    """
+    def __init__(self,
+                 method: str,
+                 url: str,
+                 params: Optional[Dict[str, Any]] = None,
+                 body_json: Optional[Dict[str, Any]] = None,
+                 data: Optional[Dict[str, Any]] = None,
+                 headers: Optional[Dict[str, str]] = None,
+                 expected_status: Optional[int] = 200,
+                 timeout: float = 10.0,
+                 name: Optional[str] = None,
+                 description: Optional[str] = None,
+                 expected_result: bool = True,
+                 response_model: Optional[Any] = None,
+                 response_model_context_key: Optional[str] = None,
+                 fail_on_validation_error: bool = False):
+        self.method = method.upper()
+        self.url = url
+        self.params = params or {}
+        self.body_json = body_json
+        self.data = data
+        self.headers = headers or {}
+        self.expected_status = expected_status
+        self.timeout = timeout
+        self.response_model = response_model
+        self.response_model_context_key = response_model_context_key
+        self.fail_on_validation_error = fail_on_validation_error
+        name = name or f"API {self.method} {url}"
+        description = description or f"Perform {self.method} request to {url}"
+        super().__init__(name, description, expected_result)
+
+    def execute(self, driver: WebDriver, context: Dict[str, Any]) -> bool:
+        # Resolve session
+        session = context.get('requests_session')
+        if session is None:
+            session = requests.Session()
+            context['requests_session'] = session
+        
+        # Build headers: auth headers from context + action headers (action overrides)
+        final_headers = {}
+        auth_headers = context.get('auth_headers', {}) or {}
+        if auth_headers:
+            final_headers.update(auth_headers)
+        if self.headers:
+            final_headers.update(self.headers)
+        
+        # Resolve URL: absolute or join with target_url from context
+        from urllib.parse import urljoin
+        base_url = context.get('target_url') or ''
+        resolved_url = self.url if self.url.lower().startswith('http') else urljoin(base_url, self.url)
+        
+        try:
+            response = session.request(
+                self.method,
+                resolved_url,
+                params=self.params or None,
+                json=self.body_json,
+                data=self.data,
+                headers=final_headers or None,
+                timeout=self.timeout,
+            )
+            
+            # Store details
+            self.store_result('url', resolved_url)
+            self.store_result('request_headers', final_headers)
+            self.store_result('status_code', getattr(response, 'status_code', None))
+            response_headers = dict(getattr(response, 'headers', {}) or {})
+            self.store_result('response_headers', response_headers)
+            # Publish to context for downstream version extraction
+            context['last_response_headers'] = response_headers
+            context['last_response_url'] = resolved_url
+            # Try JSON, fallback to text
+            body = None
+            parsed_model = None
+            validation_error = None
+            try:
+                body = response.json()
+                self.store_result('response_json', body)
+                # If a response_model is provided, attempt validation/parsing
+                if self.response_model is not None:
+                    try:
+                        # Pydantic v2 preferred: model_validate
+                        if hasattr(self.response_model, 'model_validate'):
+                            parsed_model = self.response_model.model_validate(body)
+                        else:
+                            # Pydantic v1 fallback
+                            parsed_model = self.response_model.parse_obj(body)
+                        self.store_result('response_model_instance', parsed_model)
+                        # Save into context for downstream actions
+                        key = self.response_model_context_key or 'last_response_model'
+                        context[key] = parsed_model
+                    except Exception as ve:
+                        validation_error = str(ve)
+                        self.store_result('response_validation_error', validation_error)
+            except Exception:
+                text = getattr(response, 'text', '')
+                # Limit stored text to keep logs light
+                self.store_result('response_text', text if text is None or len(text) <= 2000 else text[:2000])
+            
+            # Determine success (status-based by default)
+            if self.expected_status is not None:
+                http_ok = (getattr(response, 'status_code', None) == self.expected_status)
+            else:
+                http_ok = bool(getattr(response, 'ok', False))
+            
+            # Optionally fail on validation error
+            if self.response_model is not None and self.fail_on_validation_error and self.get_result('response_validation_error'):
+                return False if http_ok else False
+            
+            return http_ok
+        except Exception as e:
+            self.store_result('error', str(e))
+            return False
