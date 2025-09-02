@@ -311,12 +311,45 @@ class Journey:
             if self.requires_authentication():
                 auth_name = self.authentication.name if self.authentication else "Unknown"
                 logger.info(f"Authentication required: {auth_name}")
-                auth_success = self.authenticate(driver, target_url)
-                if not auth_success:
-                    logger.error("Authentication failed - aborting journey")
-                    results['errors'].append("Authentication failed")
-                    return results
-                logger.info("Authentication successful")
+                if driver is None:
+                    # API mode: use header-based authentication if available
+                    headers = {}
+                    try:
+                        if self.authentication and hasattr(self.authentication, 'get_auth_headers'):
+                            headers = self.authentication.get_auth_headers() or {}
+                    except Exception as e:
+                        logger.error(f"Failed to get authentication headers: {e}")
+                        headers = {}
+                    cookies = {}
+                    if headers:
+                        # Merge into existing context headers
+                        existing = self.get_context('auth_headers', {})
+                        merged = {**existing, **headers}
+                        self.set_context('auth_headers', merged)
+                        logger.info("Authentication headers prepared for API mode")
+                    # Try to merge cookies as well (hybrid auth)
+                    try:
+                        if self.authentication and hasattr(self.authentication, 'get_auth_cookies'):
+                            cookies = self.authentication.get_auth_cookies() or {}
+                    except Exception as e:
+                        logger.error(f"Failed to get authentication cookies: {e}")
+                        cookies = {}
+                    if cookies:
+                        existing_cookies = self.get_context('auth_cookies', {})
+                        merged_cookies = {**existing_cookies, **cookies}
+                        self.set_context('auth_cookies', merged_cookies)
+                        logger.info("Authentication cookies prepared for API mode")
+                    if not headers and not cookies:
+                        logger.error("Authentication required but no headers/cookies available in API mode")
+                        results['errors'].append("Authentication failed (no API auth data)")
+                        return results
+                else:
+                    auth_success = self.authenticate(driver, target_url)
+                    if not auth_success:
+                        logger.error("Authentication failed - aborting journey")
+                        results['errors'].append("Authentication failed")
+                        return results
+                    logger.info("Authentication successful")
             
             # Execute each step
             for i, step in enumerate(self.steps, 1):
@@ -342,7 +375,7 @@ class Journey:
                             results['actions_failed'] += 1
                     
                     # Extract target version header after step execution
-                    target_version = header_extractor.extract_target_version(driver, target_url)
+                    target_version = header_extractor.extract_target_version_hybrid(driver, target_url)
                     if target_version:
                         results['target_versions'].append(target_version)
                         logger.info(f"Target version detected: {target_version}")

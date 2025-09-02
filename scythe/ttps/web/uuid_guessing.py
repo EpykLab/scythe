@@ -5,6 +5,7 @@ from ...payloads.generators import PayloadGenerator
 import requests
 from uuid import UUID
 
+
 class GuessUUIDInURL(TTP):
     def __init__(self,
                  target_url: str,
@@ -18,10 +19,10 @@ class GuessUUIDInURL(TTP):
             description="simulate bruteforcing UUID's in the URL path",
             expected_result=expected_result,
             authentication=authentication)
-        
+
         self.target_url = target_url
         self.uri_root_path = uri_root_path
-        self.payload_generator = payload_generator   
+        self.payload_generator = payload_generator
 
     def get_payloads(self):
         yield from self.payload_generator()

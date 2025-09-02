@@ -938,3 +938,49 @@ profile_execution()
 The TTP Executor is the backbone of the Scythe framework, providing robust and flexible execution capabilities. By understanding its features and configuration options, you can effectively orchestrate security testing campaigns that meet your specific requirements.
 
 For more examples and advanced patterns, see the `examples/` directory and the behavior system documentation.
+
+
+## JourneyExecutor API Mode (REST without a Browser)
+
+Scythe Journeys can now run directly against REST APIs without launching a browser. This is useful for fast smoke checks, backend validations, and environments where a headless browser is unavailable.
+
+Key points
+- Opt-in via JourneyExecutor(..., mode="API"). Default remains UI for backward compatibility.
+- A requests.Session is created and stored in the journey context under requests_session.
+- If your Journey specifies authentication that implements get_auth_headers(), those headers are merged into the session and available under auth_headers in context.
+- Use ApiRequestAction in your steps to perform HTTP calls.
+- Header extraction leverages a hybrid strategy: first a direct HTTP request (banner grab), then Selenium logs if a driver exists.
+
+Minimal example
+
+```python
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+
+step = Step(
+    name="API Health",
+    description="GET /api/health returns 200",
+    actions=[ApiRequestAction(method="GET", url="/api/health", expected_status=200)],
+)
+journey = Journey(name="API Smoke", description="Simple API smoke test", steps=[step])
+executor = JourneyExecutor(journey=journey, target_url="http://localhost:8080", mode="API")
+results = executor.run()
+print(results["overall_success"])  # True if step passed
+```
+
+Context keys in API mode
+- mode: 'API'
+- requests_session: The shared requests.Session for all ApiRequestAction invocations.
+- auth_headers: Dict of authentication headers merged into the session.
+- last_response_headers: Headers from the most recent ApiRequestAction.
+- last_response_url: URL from the most recent ApiRequestAction.
+
+Authentication
+- Any Authentication that exposes get_auth_headers() can supply headers for API runs.
+- BearerTokenAuth(token="...") is supported out-of-the-box and will add an Authorization header.
+
+Notes
+- No Chrome/ChromeDriver required for API mode.
+- You can maintain separate Journeys for UI and API scenarios, or keep UI Journeys unchanged.
+- When mode='UI', behavior remains unchanged and is fully backward-compatible.

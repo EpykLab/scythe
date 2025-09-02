@@ -465,3 +465,19 @@ Effective adverse conditions testing with Scythe helps achieve:
 Begin with the **[Getting Started Guide](GETTING_STARTED.md)** and discover how Scythe can help you build more robust, reliable systems through comprehensive testing under challenging conditions.
 
 For questions, improvements, or contributions, engage with our community through GitHub issues and discussions.
+
+
+## New: API Mode (Journeys without a Browser)
+
+Scythe now supports executing Journeys directly against REST APIs without launching Chrome. This is ideal for fast smoke checks, backend validations, and environments where a browser is not available.
+
+- Opt-in via JourneyExecutor(..., mode="API"). Default remains UI for backward compatibility.
+- Use ApiRequestAction to perform HTTP requests using a shared requests.Session.
+- Authentication headers can be supplied via Authentication.get_auth_headers() (e.g., BearerTokenAuth).
+
+Quick links:
+- API Quickstart: docs/GETTING_STARTED.md (see "API Quickstart (No Browser)")
+- Executor details: docs/EXECUTOR.md (see "JourneyExecutor API Mode")
+- API Reference: docs/API_REFERENCE.md (see "Journey API Mode and ApiRequestAction")
+- Example: examples/api_mode_demo.py
+- Migration guide: docs/api-feat-migration.md

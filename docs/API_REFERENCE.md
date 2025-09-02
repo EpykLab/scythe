@@ -797,3 +797,215 @@ DEFAULT_CHROME_OPTIONS = [
 ```
 
 This API reference provides the complete interface for the Scythe framework. For usage examples and patterns, see the other documentation files and the `examples/` directory.
+
+
+## Journey API Mode and ApiRequestAction (New)
+
+This release introduces an API-first execution option for Journeys, allowing Scythe to interact directly with REST endpoints without launching a browser.
+
+### JourneyExecutor: mode parameter
+
+Signature excerpt:
+
+```python
+from scythe.journeys.executor import JourneyExecutor
+
+executor = JourneyExecutor(
+    journey=journey,
+    target_url="http://api.example.com",
+    headless=True,
+    behavior=None,
+    driver_options=None,
+    mode="API",  # "UI" (default) or "API"
+)
+```
+
+Behavior:
+- mode="UI": Backward-compatible browser-driven execution (Selenium WebDriver initialized).
+- mode="API": No browser is started. A requests.Session is created and added to the Journey context.
+
+Context keys in API mode:
+- mode: 'API'
+- requests_session: a shared requests.Session instance
+- auth_headers: headers provided by Authentication.get_auth_headers(), if any
+- last_response_headers: headers from the most recent ApiRequestAction
+- last_response_url: URL from the most recent ApiRequestAction
+
+Header extraction:
+- When reporting step summaries, Scythe attempts to detect the X-SCYTHE-TARGET-VERSION header using a hybrid approach (direct HTTP banner grab first, then Selenium logs if a driver is present).
+
+Authentication contract:
+- Any Authentication may implement:
+
+```python
+def get_auth_headers(self) -> Dict[str, str]:
+    """Return headers for API runs (e.g., {"Authorization": "Bearer <token>"})."""
+```
+
+- BearerTokenAuth already implements get_auth_headers when a token is available.
+
+### ApiRequestAction
+
+Perform a REST call during a Journey step. Intended for use with API mode, but it will work anywhere a requests.Session is available in context.
+
+Signature:
+
+```python
+class ApiRequestAction(Action):
+    def __init__(
+        self,
+        method: str,
+        url: str,
+        params: Optional[Dict[str, Any]] = None,
+        body_json: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        expected_status: Optional[int] = 200,
+        timeout: float = 10.0,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        expected_result: bool = True,
+    ) -> None: ...
+```
+
+Parameters:
+- method: HTTP method (GET, POST, PUT, DELETE, ...)
+- url: Absolute URL or path (if path, it is resolved against Journey context 'target_url')
+- params: Optional query parameters
+- body_json: JSON body dict (sent via 'json=')
+- data: Form data or bytes (sent via 'data=')
+- headers: Per-action headers (merged over auth_headers if present)
+- expected_status: Status code considered success (None to treat response.ok as success)
+- timeout: requests timeout in seconds
+- name/description/expected_result: Standard Action metadata
+
+Execution details:
+- Uses context['requests_session'] if present; creates one if not.
+- Builds headers as {**auth_headers, **action_headers} (action overrides auth).
+- Resolves relative URLs against context['target_url'].
+- Stores results on the action:
+  - 'url', 'request_headers', 'status_code', 'response_headers'
+  - 'response_json' or 'response_text' (first 2000 chars)
+- Updates Journey context:
+  - 'last_response_headers', 'last_response_url'
+
+Return value:
+- True if actual response matched expected_status (or response.ok if expected_status is None), else False.
+
+Example:
+
+```python
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+
+step = Step(
+    name="Health",
+    description="Backend health should be OK",
+    actions=[ApiRequestAction(method="GET", url="/api/health", expected_status=200)],
+)
+journey = Journey(name="API Smoke", description="Simple API smoke test", steps=[step])
+executor = JourneyExecutor(journey=journey, target_url="http://localhost:8080", mode="API")
+results = executor.run()
+assert results["overall_success"] is True
+```
+
+
+
+### ApiRequestAction: Response Model Integration (Pydantic)
+
+ApiRequestAction can validate and parse JSON responses into user-defined models.
+This is optional and backward-compatible. Provide a model class via response_model.
+
+New parameters:
+- response_model: a Pydantic-like model class. With Pydantic v2, it should expose classmethod model_validate(data); with v1 it should expose parse_obj(data). If both exist, v2 path is preferred.
+- response_model_context_key: optional context key name under which the parsed model instance is stored (default: 'last_response_model').
+- fail_on_validation_error: if True, the action will be marked failed when validation/parsing raises.
+
+Behavior:
+- If response JSON is available and response_model provided, the action attempts to parse it using model_validate (v2) or parse_obj (v1).
+- On success: the parsed instance is stored on the action as 'response_model_instance' and placed into the journey context under response_model_context_key (or default).
+- On validation failure: 'response_validation_error' is stored with the error text; the action still uses HTTP status to determine success unless fail_on_validation_error=True.
+
+Example (Pydantic v2):
+
+```python
+from pydantic import BaseModel
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+
+class Health(BaseModel):
+    status: str
+    version: str | None = None
+
+step = Step(
+    name="Health",
+    description="GET /api/health returns 200 and valid schema",
+    actions=[
+        ApiRequestAction(
+            method="GET",
+            url="/api/health",
+            expected_status=200,
+            response_model=Health,
+            response_model_context_key="health_model",
+            fail_on_validation_error=True,
+        )
+    ],
+)
+
+journey = Journey(name="API Schema Smoke", description="Check schema", steps=[step])
+executor = JourneyExecutor(journey=journey, target_url="http://localhost:8080", mode="API")
+results = executor.run()
+assert results["overall_success"] is True
+```
+
+
+
+## Hybrid Cookie JWT Authentication (CookieJWTAuth)
+
+CookieJWTAuth enables hybrid authentication for applications that set a JWT in a cookie (e.g., 'stellarbridge') instead of using Authorization headers.
+
+Location: scythe.auth.cookie_jwt
+
+Constructor:
+- login_url: str — API endpoint to obtain the JWT (POST).
+- username: Optional[str]
+- password: Optional[str]
+- username_field: str = 'email' — field name for username/email in login payload.
+- password_field: str = 'password' — field name for password in login payload.
+- extra_fields: Optional[Dict[str, Any]] — additional fields to include in login payload.
+- jwt_json_path: str = 'token' — dot-path to JWT in the login JSON response (e.g., 'auth.jwt').
+- cookie_name: str = 'stellarbridge' — cookie name to set with the JWT.
+
+Methods:
+- get_auth_cookies() -> Dict[str, str]: Returns {cookie_name: token}; performs login if needed.
+- get_auth_headers() -> Dict[str, str]: Returns {} (not used for this auth mode).
+- authenticate(driver: WebDriver, target_url: str) -> bool: Performs login if needed and sets the cookie in Selenium for the target domain.
+
+Usage in API Journeys:
+```python
+from scythe.auth import CookieJWTAuth
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+
+auth = CookieJWTAuth(
+    login_url="http://localhost:8080/api/login",
+    username="user@example.com",
+    password="secret",
+    username_field="email",
+    password_field="password",
+    jwt_json_path="auth.jwt",
+    cookie_name="stellarbridge",
+)
+
+step = Step(
+    name="Profile",
+    description="Protected endpoint",
+    actions=[ApiRequestAction(method="GET", url="/api/profile", expected_status=200)],
+)
+journey = Journey(name="Cookie API", description="", steps=[step], authentication=auth)
+
+results = JourneyExecutor(journey, target_url="http://localhost:8080", mode="API").run()
+```

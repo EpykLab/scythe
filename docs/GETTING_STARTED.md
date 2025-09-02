@@ -517,3 +517,123 @@ sudo chmod +x /usr/bin/google-chrome
 4. Review the documentation for your specific use case
 
 You're now ready to start using Scythe for security testing! Begin with the simple examples above and gradually explore more advanced features as you become comfortable with the framework.
+
+
+## API Quickstart (No Browser)
+
+Scythe now supports running journeys directly against REST APIs without launching a browser. Use JourneyExecutor with mode="API" and ApiRequestAction to perform requests via requests.Session.
+
+Example using the included test server (optional):
+
+1. In one terminal, start the demo server that returns the X-SCYTHE-TARGET-VERSION header:
+   
+   python examples/test_server_with_version.py 8080 1.2.3
+
+2. In another terminal, run the API-mode demo:
+   
+   python examples/api_mode_demo.py
+
+Minimal inline example:
+
+```python
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+
+step = Step(
+    name="Ping API",
+    description="GET /api/health should return 200",
+    actions=[ApiRequestAction(method="GET", url="/api/health", expected_status=200)],
+)
+
+journey = Journey(name="API Smoke", description="Simple API health check", steps=[step])
+
+executor = JourneyExecutor(journey=journey, target_url="http://localhost:8080", mode="API")
+results = executor.run()
+print("Overall:", results.get("overall_success"))
+```
+
+Notes:
+- No Chrome is required in API mode.
+- If your API requires authentication, implement Authentication.get_auth_headers() (BearerTokenAuth already supports this) and pass it to Journey(..., authentication=...). The executor will merge headers into the session.
+- Journey automatically attempts to detect version headers via a hybrid approach that first tries a direct HTTP request and then falls back to browser logs if a driver is used.
+
+
+
+## API Schema Validation with Pydantic (Optional)
+
+When using API mode, you can validate response JSON against a Pydantic model by passing response_model to ApiRequestAction.
+
+Example:
+
+```python
+from pydantic import BaseModel
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+
+class Health(BaseModel):
+    status: str
+    version: str | None = None
+
+step = Step(
+    name="Health",
+    description="GET /api/health returns 200 and valid schema",
+    actions=[
+        ApiRequestAction(
+            method="GET",
+            url="/api/health",
+            expected_status=200,
+            response_model=Health,
+            response_model_context_key="health_model",
+            fail_on_validation_error=True,
+        )
+    ],
+)
+
+journey = Journey(name="API Schema Smoke", description="Schema check", steps=[step])
+executor = JourneyExecutor(journey=journey, target_url="http://localhost:8080", mode="API")
+results = executor.run()
+print("Overall:", results.get("overall_success"))
+```
+
+Notes:
+- If validation fails and fail_on_validation_error=False (default), the action may still be marked successful if HTTP status matches; the validation error is recorded on the action under 'response_validation_error'.
+- The parsed model instance is available via action.get_result('response_model_instance') and in Journey context under response_model_context_key (default 'last_response_model').
+
+
+
+## Hybrid Cookie-Based Authentication (Optional)
+
+Some applications authenticate via a JWT stored in a cookie (e.g., 'stellarbridge'). Use CookieJWTAuth to log in via API, extract the token from a JSON response, and provide it as a cookie for API or UI runs.
+
+Example (API mode):
+
+```python
+from scythe.auth import CookieJWTAuth
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+
+auth = CookieJWTAuth(
+    login_url="http://localhost:8080/api/login",
+    username="user@example.com",
+    password="secret",
+    username_field="email",
+    password_field="password",
+    jwt_json_path="auth.jwt",
+    cookie_name="stellarbridge",
+)
+
+step = Step(
+    name="Profile",
+    description="Protected endpoint",
+    actions=[ApiRequestAction(method="GET", url="/api/profile", expected_status=200)],
+)
+journey = Journey(name="Cookie API", description="", steps=[step], authentication=auth)
+
+results = JourneyExecutor(journey, target_url="http://localhost:8080", mode="API").run()
+print("Overall:", results.get("overall_success"))
+```
+
+See docs/HYBRID_AUTH.md for details.
