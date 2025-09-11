@@ -776,6 +776,9 @@ Note: The CLI is implemented with Typer, so `scythe --help` and per-command help
 - scythe db dump
   - Prints a JSON dump of the tests and runs tables from ./.scythe/scythe.db.
 
+- scythe db sync-compat <name>
+  - Reads COMPATIBLE_VERSIONS from ./.scythe/scythe_tests/<name>.py (if present) and updates the `tests.compatible_versions` field in the DB. If the variable is missing, the DB entry is set to empty and the command exits successfully.
+
 ### Test template
 
 Created tests use a minimal template so you can start quickly:

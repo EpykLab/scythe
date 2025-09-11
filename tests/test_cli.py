@@ -96,6 +96,57 @@ class TestScytheCLI(unittest.TestCase):
         self.assertIn("runs", j)
         self.assertTrue(any(row.get("name") == "charlie_test.py" for row in j["tests"]))
 
+    def test_db_sync_compat_updates_versions(self):
+        scythe_main(["init", "--path", self.root])
+        self._chdir(self.root)
+        scythe_main(["new", "delta_test"])  # template includes COMPATIBLE_VERSIONS=["1.2.3"]
+        # run sync-compat
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = scythe_main(["db", "sync-compat", "delta_test"])  # should succeed
+        self.assertEqual(code, 0)
+        # verify DB updated
+        db_path = os.path.join(self.root, ".scythe", "scythe.db")
+        conn = sqlite3.connect(db_path)
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT compatible_versions FROM tests WHERE name=?", ("delta_test.py",))
+            row = cur.fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(row[0], json.dumps(["1.2.3"]))
+        finally:
+            conn.close()
+
+    def test_db_sync_compat_handles_missing(self):
+        scythe_main(["init", "--path", self.root])
+        self._chdir(self.root)
+        scythe_main(["new", "echo_test"])  # create test
+        # Remove the COMPATIBLE_VERSIONS line from the test file
+        test_path = os.path.join(self.root, ".scythe", "scythe_tests", "echo_test.py")
+        with open(test_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        content = content.replace("COMPATIBLE_VERSIONS = \"[\"1.2.3\"]\"", "")
+        # The above replacement string might not match due to quoting; do a safer removal by filtering lines
+        lines = [ln for ln in content.splitlines() if not ln.strip().startswith("COMPATIBLE_VERSIONS")]
+        with open(test_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        # run sync-compat
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = scythe_main(["db", "sync-compat", "echo_test"])  # should succeed gracefully
+        self.assertEqual(code, 0)
+        # verify DB updated with empty string
+        db_path = os.path.join(self.root, ".scythe", "scythe.db")
+        conn = sqlite3.connect(db_path)
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT compatible_versions FROM tests WHERE name=?", ("echo_test.py",))
+            row = cur.fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(row[0], "")
+        finally:
+            conn.close()
+
 
 if __name__ == "__main__":
     unittest.main()

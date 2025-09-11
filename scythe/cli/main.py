@@ -1,4 +1,5 @@
 import argparse
+import ast
 import json
 import os
 import re
@@ -34,6 +35,7 @@ from typing import List, Tuple
 from scythe.core.executor import TTPExecutor
 from scythe.behaviors import HumanBehavior
 
+COMPATIBLE_VERSIONS = ["1.2.3"]
 
 def scythe_test_definition(args):
     # TODO: implement your test using Scythe primitives.
@@ -142,7 +144,6 @@ def _init_project(path: str) -> str:
             f.write("scythe.db\n")
 
     return root
-
 
 def _create_test(project_root: str, name: str) -> str:
     if not name:
@@ -258,6 +259,99 @@ def _dump_db(project_root: str) -> Dict[str, List[Dict[str, str]]]:
         conn.close()
 
 
+def _test_file_path(project_root: str, name: str) -> str:
+    filename = name if name.endswith(".py") else f"{name}.py"
+    return os.path.join(project_root, PROJECT_DIRNAME, TESTS_DIRNAME, filename)
+
+
+def _read_compatible_versions_from_test(test_path: str) -> Optional[List[str]]:
+    if not os.path.exists(test_path):
+        return None
+    try:
+        with open(test_path, "r", encoding="utf-8") as f:
+            src = f.read()
+        tree = ast.parse(src, filename=test_path)
+    except Exception:
+        return None
+
+    versions: Optional[List[str]] = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            # handle simple assignment COMPATIBLE_VERSIONS = [...]
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "COMPATIBLE_VERSIONS":
+                    val = node.value
+                    if isinstance(val, (ast.List, ast.Tuple)):
+                        items: List[str] = []
+                        for elt in val.elts:
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                                items.append(elt.value)
+                            elif isinstance(elt, ast.Str):  # py<3.8 compatibility style
+                                items.append(elt.s)
+                            else:
+                                # unsupported element type; abort parse gracefully
+                                return None
+                        versions = items
+                    elif isinstance(val, ast.Constant) and val.value is None:
+                        versions = []
+                    else:
+                        return None
+        elif isinstance(node, ast.AnnAssign):
+            if isinstance(node.target, ast.Name) and node.target.id == "COMPATIBLE_VERSIONS" and node.value is not None:
+                val = node.value
+                if isinstance(val, (ast.List, ast.Tuple)):
+                    items: List[str] = []
+                    for elt in val.elts:
+                        if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                            items.append(elt.value)
+                        elif isinstance(elt, ast.Str):
+                            items.append(elt.s)
+                        else:
+                            return None
+                    versions = items
+                elif isinstance(val, ast.Constant) and val.value is None:
+                    versions = []
+                else:
+                    return None
+    return versions
+
+
+def _update_test_compatible_versions(project_root: str, name: str, versions: Optional[List[str]]) -> None:
+    filename = name if name.endswith(".py") else f"{name}.py"
+    test_path_rel = os.path.relpath(_test_file_path(project_root, filename), project_root)
+    conn = _open_db(project_root)
+    try:
+        cur = conn.cursor()
+        compat_str = json.dumps(versions) if versions is not None else ""
+        cur.execute(
+            "UPDATE tests SET compatible_versions=? WHERE name=?",
+            (compat_str, filename),
+        )
+        if cur.rowcount == 0:
+            # Insert a row if it doesn't exist yet
+            cur.execute(
+                "INSERT OR REPLACE INTO tests(name, path, created_date, compatible_versions) VALUES(?,?,?,?)",
+                (
+                    filename,
+                    test_path_rel,
+                    datetime.utcnow().isoformat(timespec="seconds") + "Z",
+                    compat_str,
+                ),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _sync_compat(project_root: str, name: str) -> Optional[List[str]]:
+    test_path = _test_file_path(project_root, name)
+    if not os.path.exists(test_path):
+        raise ScytheCLIError(f"Test not found: {test_path}")
+    versions = _read_compatible_versions_from_test(test_path)
+    _update_test_compatible_versions(project_root, name, versions)
+    return versions
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="scythe", description="Scythe CLI")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -274,6 +368,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_db = sub.add_parser("db", help="Database utilities")
     sub_db = p_db.add_subparsers(dest="db_cmd", required=True)
     sub_db.add_parser("dump", help="Dump tests and runs tables as JSON")
+    p_sync = sub_db.add_parser("sync-compat", help="Sync COMPATIBLE_VERSIONS from a test file into the DB")
+    p_sync.add_argument("name", help="Name of the test (e.g., login_smoke or login_smoke.py)")
 
     return parser
 
@@ -313,6 +409,14 @@ def _legacy_main(argv: Optional[List[str]] = None) -> int:
             if args.db_cmd == "dump":
                 data = _dump_db(project_root)
                 print(json.dumps(data, indent=2))
+                return 0
+            if args.db_cmd == "sync-compat":
+                versions = _sync_compat(project_root, args.name)
+                filename = args.name if args.name.endswith(".py") else f"{args.name}.py"
+                if versions is None:
+                    print(f"No COMPATIBLE_VERSIONS found in {filename}; DB updated with empty value.")
+                else:
+                    print(f"Updated {filename} compatible_versions to: {json.dumps(versions)}")
                 return 0
 
         raise ScytheCLIError("Unknown command")
@@ -387,6 +491,22 @@ def main(argv: Optional[List[str]] = None) -> int:
             raise ScytheCLIError("Not inside a Scythe project. Run 'scythe init' first.")
         data = _dump_db(project_root)
         print(json.dumps(data, indent=2))
+        return 0
+
+    @db_app.command("sync-compat")
+    def sync_compat(
+        name: str = typer.Argument(..., help="Name of the test (e.g., login_smoke or login_smoke.py)")
+    ) -> int:
+        """Sync COMPATIBLE_VERSIONS from a test file into the DB"""
+        project_root = _find_project_root()
+        if not project_root:
+            raise ScytheCLIError("Not inside a Scythe project. Run 'scythe init' first.")
+        versions = _sync_compat(project_root, name)
+        filename = name if name.endswith(".py") else f"{name}.py"
+        if versions is None:
+            print(f"No COMPATIBLE_VERSIONS found in {filename}; DB updated with empty value.")
+        else:
+            print(f"Updated {filename} compatible_versions to: {json.dumps(versions)}")
         return 0
 
     app.add_typer(db_app, name="db")
