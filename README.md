@@ -745,3 +745,76 @@ This architecture supports testing scenarios from simple security checks to comp
 ---
 
 **Scythe**: Comprehensive adverse conditions testing for robust, reliable systems.
+
+
+
+## Scythe CLI (embedded)
+
+Scythe now ships with a lightweight CLI that helps you bootstrap and manage your local Scythe testing workspace. After installing the package (pipx recommended), a `scythe` command is available.
+
+Note: The CLI is implemented with Typer, so `scythe --help` and per-command help (e.g., `scythe run --help`) are available. Command names and options remain the same as before.
+
+- Install with pipx:
+  - pipx install scythe-ttp
+- Or install locally in editable mode for development:
+  - pip install -e .
+
+### Commands
+
+- scythe init [--path PATH]
+  - Initializes a Scythe project at PATH (default: current directory).
+  - Creates:
+    - ./.scythe/scythe.db (SQLite DB with tests and runs tables)
+    - ./.scythe/scythe_tests/ (where your test scripts live)
+
+- scythe new <name>
+  - Creates a new test template at ./.scythe/scythe_tests/<name>.py and registers it in the DB (tests table).
+
+- scythe run <name or name.py>
+  - Runs the specified test from ./.scythe/scythe_tests and records the run into the DB (runs table). Exit code reflects success (0) or failure (non-zero).
+
+- scythe db dump
+  - Prints a JSON dump of the tests and runs tables from ./.scythe/scythe.db.
+
+### Test template
+
+Created tests use a minimal template so you can start quickly:
+
+```python
+#!/usr/bin/env python3
+
+# scythe test initial template
+
+import argparse
+import os
+import sys
+import time
+from typing import List, Tuple
+
+# Scythe framework imports
+from scythe.core.executor import TTPExecutor
+from scythe.behaviors import HumanBehavior
+
+
+def scythe_test_definition(args):
+    # TODO: implement your test using Scythe primitives.
+    return True
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Scythe test script")
+    parser.add_argument('--url', help='Target URL (overridden by localhost unless FORCE_USE_CLI_URL=1)')
+    args = parser.parse_args()
+
+    ok = scythe_test_definition(args)
+    sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()
+```
+
+Notes:
+- The CLI looks for tests in ./.scythe/scythe_tests.
+- Each `run` creates a record in the `runs` table with datetime, name_of_test, x_scythe_target_version (best-effort parsed from output), result, raw_output.
+- Each `new` creates a record in the `tests` table with name, path, created_date, compatible_versions.

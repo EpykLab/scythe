@@ -8,7 +8,7 @@ with open("./requirements.txt", "r", encoding="utf-8") as f:
 
 setuptools.setup(
     name="scythe-ttp",
-    version="0.13.0",
+    version="0.14.0",
     author="EpykLab",
     author_email="cyber@epyklab.com",
     description="An extensible framework for emulating attacker TTPs with Selenium.",
@@ -27,7 +27,7 @@ setuptools.setup(
         "Framework :: Pytest",
     ],
 
-    python_requires=">=3.8",
+    python_requires=">=3.8,<=3.13",
 
     packages=setuptools.find_packages(exclude=["tests*", "examples*"]),
 

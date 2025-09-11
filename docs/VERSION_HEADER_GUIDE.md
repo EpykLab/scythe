@@ -216,7 +216,7 @@ def get_app_version():
     except:
         pass
     
-    # From package.json, setup.py, etc.
+    # From package.json, setup.py.bak, etc.
     try:
         with open('package.json', 'r') as f:
             import json

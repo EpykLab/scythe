@@ -1230,3 +1230,587 @@ No X-SCYTHE-TARGET-VERSION headers detected in responses.
 2025-09-02 11:46:15,132 - Orchestrator.Test Scale - INFO - Total Time: 20.30s
 2025-09-02 11:46:15,132 - Orchestrator.Test Scale - INFO - Average Time: 6.77s
 2025-09-02 11:46:15,132 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 10:35:14,990 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:14,990 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:14,992 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:14,993 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:14,993 - Mock TTP - INFO - Starting TTP: 'Mock TTP' on http://test.com
+2025-09-11 10:35:14,993 - Mock TTP - INFO - Description: A mock TTP for testing behaviors
+2025-09-11 10:35:14,993 - Mock TTP - INFO - Using behavior: Mock Behavior
+2025-09-11 10:35:14,993 - Mock TTP - INFO - Behavior description: Mock behavior for testing
+2025-09-11 10:35:14,994 - Mock TTP - INFO - Attempt 1: Executing with payload -> 'test1'
+2025-09-11 10:35:15,094 - Mock TTP - INFO - EXPECTED FAILURE: 'test1' (security control working)
+2025-09-11 10:35:15,094 - Mock TTP - INFO - Attempt 2: Executing with payload -> 'test2'
+2025-09-11 10:35:15,195 - Mock TTP - INFO - EXPECTED FAILURE: 'test2' (security control working)
+2025-09-11 10:35:15,195 - Mock TTP - INFO - Attempt 3: Executing with payload -> 'test3'
+2025-09-11 10:35:15,295 - Mock TTP - INFO - EXPECTED FAILURE: 'test3' (security control working)
+2025-09-11 10:35:40,859 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:42,863 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:44,865 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:46,865 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:48,867 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:50,868 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:53,873 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:54,873 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:55,875 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:56,876 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:35:56,879 - HeaderExtractor - WARNING - Failed to extract target version from logs: Driver error
+2025-09-11 10:35:58,882 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 10:35:58,883 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 10:35:58,883 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 10:35:58,883 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 10:35:58,883 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 10:35:58,883 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 10:35:58,883 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 10:35:58,883 - Journey.Step.Test Step - ERROR - ✗ Action failed: Test Action
+2025-09-11 10:35:58,883 - Journey.Test Journey - ERROR - ✗ Step failed: Test Step
+2025-09-11 10:36:00,315 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 10:36:00,317 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:36:00,317 - Journey.Test Journey - INFO - Journey completed in 1.43 seconds
+2025-09-11 10:36:00,318 - Journey.Test Journey - INFO - Overall success: False
+2025-09-11 10:36:00,318 - Journey.Test Journey - INFO - Steps: 0/1 succeeded
+2025-09-11 10:36:00,318 - Journey.Test Journey - INFO - Actions: 0/1 succeeded
+2025-09-11 10:36:00,324 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 10:36:00,324 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 10:36:00,324 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 10:36:00,324 - Journey.Test Journey - INFO - Authentication required: Test Auth
+2025-09-11 10:36:00,324 - Journey.Test Journey - INFO - Authentication successful
+2025-09-11 10:36:00,324 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 10:36:00,324 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 10:36:00,324 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 10:36:00,324 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 10:36:00,324 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-09-11 10:36:00,324 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-09-11 10:36:00,324 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-09-11 10:36:01,754 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 10:36:01,756 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:36:01,756 - Journey.Test Journey - INFO - Journey completed in 1.43 seconds
+2025-09-11 10:36:01,756 - Journey.Test Journey - INFO - Overall success: True
+2025-09-11 10:36:01,756 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-09-11 10:36:01,756 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-09-11 10:36:01,757 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 10:36:01,757 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 10:36:01,757 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 10:36:01,757 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 10:36:01,757 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 10:36:01,757 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 10:36:01,757 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 10:36:01,757 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-09-11 10:36:01,757 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-09-11 10:36:01,757 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-09-11 10:36:03,126 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 10:36:03,128 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:36:03,128 - Journey.Test Journey - INFO - Journey completed in 1.37 seconds
+2025-09-11 10:36:03,128 - Journey.Test Journey - INFO - Overall success: True
+2025-09-11 10:36:03,128 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-09-11 10:36:03,128 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-09-11 10:36:03,143 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 10:36:03,143 - Orchestrator.Test Scale - INFO - STARTING ORCHESTRATION: Test Scale
+2025-09-11 10:36:03,144 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 10:36:03,144 - Orchestrator.Test Scale - INFO - Test: Test TTP (TTP)
+2025-09-11 10:36:03,144 - Orchestrator.Test Scale - INFO - Target URL: http://test.com
+2025-09-11 10:36:03,144 - Orchestrator.Test Scale - INFO - Strategy: sequential
+2025-09-11 10:36:03,144 - Orchestrator.Test Scale - INFO - Replications: 3
+2025-09-11 10:36:03,144 - Orchestrator.Test Scale - INFO - Max Workers: 2
+2025-09-11 10:36:03,144 - Orchestrator.Test Scale - INFO - Executing TTP replication 1/3
+2025-09-11 10:36:03,144 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 10:36:03,144 - Test TTP - INFO - Description: Test Description
+2025-09-11 10:36:04,220 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 10:36:04,220 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 10:36:08,715 - Test TTP - INFO - EXPECTED SUCCESS: 'test_payload_0'
+2025-09-11 10:36:08,715 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 10:36:09,793 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 10:36:09,793 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 10:36:10,864 - Test TTP - INFO - EXPECTED SUCCESS: 'test_payload_2'
+2025-09-11 10:36:10,937 - Test TTP - INFO - 
+==================================================
+2025-09-11 10:36:10,937 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 10:36:10,937 - Test TTP - INFO - ==================================================
+2025-09-11 10:36:10,937 - Test TTP - INFO - Total results: 2
+2025-09-11 10:36:10,937 - Test TTP - INFO - Expected successes: 2
+2025-09-11 10:36:10,937 - Test TTP - INFO -   ✓ Payload: test_payload_0 | URL: https://www.squadhelp.com/name/Test
+2025-09-11 10:36:10,937 - Test TTP - INFO -   ✓ Payload: test_payload_2 | URL: https://www.squadhelp.com/name/Test
+2025-09-11 10:36:10,937 - Test TTP - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-09-11 10:36:10,937 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 1
+2025-09-11 10:36:10,947 - Orchestrator.Test Scale - INFO - Ramp-up delay: 0.01s before execution 2
+2025-09-11 10:36:10,957 - Orchestrator.Test Scale - INFO - Executing TTP replication 2/3
+2025-09-11 10:36:10,958 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 10:36:10,958 - Test TTP - INFO - Description: Test Description
+2025-09-11 10:36:11,196 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 10:36:11,196 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 10:36:14,679 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_0' (security control working)
+2025-09-11 10:36:14,679 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 10:36:15,754 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 10:36:15,754 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 10:36:16,822 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_2' (security control working)
+2025-09-11 10:36:16,877 - Test TTP - INFO - 
+==================================================
+2025-09-11 10:36:16,877 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 10:36:16,877 - Test TTP - INFO - ==================================================
+2025-09-11 10:36:16,877 - Test TTP - INFO - No successes detected (expected to find vulnerabilities).
+2025-09-11 10:36:16,877 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 2
+2025-09-11 10:36:16,887 - Orchestrator.Test Scale - INFO - Ramp-up delay: 0.01s before execution 3
+2025-09-11 10:36:16,897 - Orchestrator.Test Scale - INFO - Executing TTP replication 3/3
+2025-09-11 10:36:16,898 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 10:36:16,898 - Test TTP - INFO - Description: Test Description
+2025-09-11 10:36:17,136 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 10:36:17,136 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 10:36:20,350 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_0' (security control working)
+2025-09-11 10:36:20,350 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 10:36:21,422 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 10:36:21,422 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 10:36:22,513 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_2' (security control working)
+2025-09-11 10:36:22,568 - Test TTP - INFO - 
+==================================================
+2025-09-11 10:36:22,568 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 10:36:22,568 - Test TTP - INFO - ==================================================
+2025-09-11 10:36:22,568 - Test TTP - INFO - No successes detected (expected to find vulnerabilities).
+2025-09-11 10:36:22,568 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 3
+2025-09-11 10:36:22,578 - Orchestrator.Test Scale - INFO - 
+============================================================
+2025-09-11 10:36:22,579 - Orchestrator.Test Scale - INFO - ORCHESTRATION SUMMARY: Test Scale
+2025-09-11 10:36:22,579 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 10:36:22,579 - Orchestrator.Test Scale - INFO - Strategy: sequential
+2025-09-11 10:36:22,579 - Orchestrator.Test Scale - INFO - Executions: 1/3 successful (33.3%)
+2025-09-11 10:36:22,579 - Orchestrator.Test Scale - INFO - Total Time: 19.43s
+2025-09-11 10:36:22,579 - Orchestrator.Test Scale - INFO - Average Time: 6.48s
+2025-09-11 10:36:22,579 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 10:37:12,646 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:12,646 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:12,649 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:12,649 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:12,650 - Mock TTP - INFO - Starting TTP: 'Mock TTP' on http://test.com
+2025-09-11 10:37:12,650 - Mock TTP - INFO - Description: A mock TTP for testing behaviors
+2025-09-11 10:37:12,650 - Mock TTP - INFO - Using behavior: Mock Behavior
+2025-09-11 10:37:12,650 - Mock TTP - INFO - Behavior description: Mock behavior for testing
+2025-09-11 10:37:12,650 - Mock TTP - INFO - Attempt 1: Executing with payload -> 'test1'
+2025-09-11 10:37:12,750 - Mock TTP - INFO - EXPECTED FAILURE: 'test1' (security control working)
+2025-09-11 10:37:12,751 - Mock TTP - INFO - Attempt 2: Executing with payload -> 'test2'
+2025-09-11 10:37:12,851 - Mock TTP - INFO - EXPECTED FAILURE: 'test2' (security control working)
+2025-09-11 10:37:12,851 - Mock TTP - INFO - Attempt 3: Executing with payload -> 'test3'
+2025-09-11 10:37:12,952 - Mock TTP - INFO - EXPECTED FAILURE: 'test3' (security control working)
+2025-09-11 10:37:33,301 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:35,305 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:37,306 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:39,307 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:41,309 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:43,310 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:46,316 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:47,316 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:48,318 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:49,320 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:49,322 - HeaderExtractor - WARNING - Failed to extract target version from logs: Driver error
+2025-09-11 10:37:50,105 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 10:37:50,105 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 10:37:50,105 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 10:37:50,105 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 10:37:50,105 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 10:37:50,105 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 10:37:50,105 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 10:37:50,106 - Journey.Step.Test Step - ERROR - ✗ Action failed: Test Action
+2025-09-11 10:37:50,106 - Journey.Test Journey - ERROR - ✗ Step failed: Test Step
+2025-09-11 10:37:50,582 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 10:37:50,584 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:50,585 - Journey.Test Journey - INFO - Journey completed in 0.48 seconds
+2025-09-11 10:37:50,585 - Journey.Test Journey - INFO - Overall success: False
+2025-09-11 10:37:50,585 - Journey.Test Journey - INFO - Steps: 0/1 succeeded
+2025-09-11 10:37:50,585 - Journey.Test Journey - INFO - Actions: 0/1 succeeded
+2025-09-11 10:37:50,588 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 10:37:50,588 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 10:37:50,588 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 10:37:50,589 - Journey.Test Journey - INFO - Authentication required: Test Auth
+2025-09-11 10:37:50,589 - Journey.Test Journey - INFO - Authentication successful
+2025-09-11 10:37:50,589 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 10:37:50,589 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 10:37:50,589 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 10:37:50,589 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 10:37:50,589 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-09-11 10:37:50,589 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-09-11 10:37:50,589 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-09-11 10:37:50,953 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 10:37:50,955 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:50,955 - Journey.Test Journey - INFO - Journey completed in 0.37 seconds
+2025-09-11 10:37:50,955 - Journey.Test Journey - INFO - Overall success: True
+2025-09-11 10:37:50,955 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-09-11 10:37:50,955 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-09-11 10:37:50,957 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 10:37:50,957 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 10:37:50,957 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 10:37:50,957 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 10:37:50,957 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 10:37:50,957 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 10:37:50,957 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 10:37:50,957 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-09-11 10:37:50,957 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-09-11 10:37:50,957 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-09-11 10:37:51,333 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 10:37:51,335 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 10:37:51,335 - Journey.Test Journey - INFO - Journey completed in 0.38 seconds
+2025-09-11 10:37:51,335 - Journey.Test Journey - INFO - Overall success: True
+2025-09-11 10:37:51,335 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-09-11 10:37:51,335 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-09-11 10:37:51,349 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 10:37:51,349 - Orchestrator.Test Scale - INFO - STARTING ORCHESTRATION: Test Scale
+2025-09-11 10:37:51,349 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 10:37:51,349 - Orchestrator.Test Scale - INFO - Test: Test TTP (TTP)
+2025-09-11 10:37:51,349 - Orchestrator.Test Scale - INFO - Target URL: http://test.com
+2025-09-11 10:37:51,349 - Orchestrator.Test Scale - INFO - Strategy: sequential
+2025-09-11 10:37:51,349 - Orchestrator.Test Scale - INFO - Replications: 3
+2025-09-11 10:37:51,349 - Orchestrator.Test Scale - INFO - Max Workers: 2
+2025-09-11 10:37:51,349 - Orchestrator.Test Scale - INFO - Executing TTP replication 1/3
+2025-09-11 10:37:51,350 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 10:37:51,350 - Test TTP - INFO - Description: Test Description
+2025-09-11 10:37:51,582 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 10:37:51,582 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 10:37:53,373 - Test TTP - INFO - EXPECTED SUCCESS: 'test_payload_0'
+2025-09-11 10:37:53,373 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 10:37:54,454 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 10:37:54,454 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 10:37:55,521 - Test TTP - INFO - EXPECTED SUCCESS: 'test_payload_2'
+2025-09-11 10:37:55,597 - Test TTP - INFO - 
+==================================================
+2025-09-11 10:37:55,597 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 10:37:55,597 - Test TTP - INFO - ==================================================
+2025-09-11 10:37:55,598 - Test TTP - INFO - Total results: 2
+2025-09-11 10:37:55,598 - Test TTP - INFO - Expected successes: 2
+2025-09-11 10:37:55,598 - Test TTP - INFO -   ✓ Payload: test_payload_0 | URL: https://www.squadhelp.com/name/Test
+2025-09-11 10:37:55,598 - Test TTP - INFO -   ✓ Payload: test_payload_2 | URL: https://www.squadhelp.com/name/Test
+2025-09-11 10:37:55,598 - Test TTP - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-09-11 10:37:55,598 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 1
+2025-09-11 10:37:55,608 - Orchestrator.Test Scale - INFO - Ramp-up delay: 0.01s before execution 2
+2025-09-11 10:37:55,618 - Orchestrator.Test Scale - INFO - Executing TTP replication 2/3
+2025-09-11 10:37:55,618 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 10:37:55,618 - Test TTP - INFO - Description: Test Description
+2025-09-11 10:37:55,855 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 10:37:55,855 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 10:37:57,573 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_0' (security control working)
+2025-09-11 10:37:57,573 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 10:37:58,648 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 10:37:58,648 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 10:37:59,718 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_2' (security control working)
+2025-09-11 10:37:59,773 - Test TTP - INFO - 
+==================================================
+2025-09-11 10:37:59,773 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 10:37:59,773 - Test TTP - INFO - ==================================================
+2025-09-11 10:37:59,773 - Test TTP - INFO - No successes detected (expected to find vulnerabilities).
+2025-09-11 10:37:59,773 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 2
+2025-09-11 10:37:59,783 - Orchestrator.Test Scale - INFO - Ramp-up delay: 0.01s before execution 3
+2025-09-11 10:37:59,794 - Orchestrator.Test Scale - INFO - Executing TTP replication 3/3
+2025-09-11 10:37:59,794 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 10:37:59,794 - Test TTP - INFO - Description: Test Description
+2025-09-11 10:38:00,019 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 10:38:00,019 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 10:38:01,762 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_0' (security control working)
+2025-09-11 10:38:01,762 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 10:38:02,829 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 10:38:02,829 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 10:38:03,910 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_2' (security control working)
+2025-09-11 10:38:03,964 - Test TTP - INFO - 
+==================================================
+2025-09-11 10:38:03,964 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 10:38:03,964 - Test TTP - INFO - ==================================================
+2025-09-11 10:38:03,964 - Test TTP - INFO - No successes detected (expected to find vulnerabilities).
+2025-09-11 10:38:03,964 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 3
+2025-09-11 10:38:03,975 - Orchestrator.Test Scale - INFO - 
+============================================================
+2025-09-11 10:38:03,975 - Orchestrator.Test Scale - INFO - ORCHESTRATION SUMMARY: Test Scale
+2025-09-11 10:38:03,975 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 10:38:03,975 - Orchestrator.Test Scale - INFO - Strategy: sequential
+2025-09-11 10:38:03,975 - Orchestrator.Test Scale - INFO - Executions: 1/3 successful (33.3%)
+2025-09-11 10:38:03,975 - Orchestrator.Test Scale - INFO - Total Time: 12.63s
+2025-09-11 10:38:03,975 - Orchestrator.Test Scale - INFO - Average Time: 4.21s
+2025-09-11 10:38:03,975 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 11:14:35,071 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:14:35,071 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:14:35,073 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:14:35,073 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:14:35,074 - Mock TTP - INFO - Starting TTP: 'Mock TTP' on http://test.com
+2025-09-11 11:14:35,074 - Mock TTP - INFO - Description: A mock TTP for testing behaviors
+2025-09-11 11:14:35,074 - Mock TTP - INFO - Using behavior: Mock Behavior
+2025-09-11 11:14:35,074 - Mock TTP - INFO - Behavior description: Mock behavior for testing
+2025-09-11 11:14:35,074 - Mock TTP - INFO - Attempt 1: Executing with payload -> 'test1'
+2025-09-11 11:14:35,175 - Mock TTP - INFO - EXPECTED FAILURE: 'test1' (security control working)
+2025-09-11 11:14:35,175 - Mock TTP - INFO - Attempt 2: Executing with payload -> 'test2'
+2025-09-11 11:14:35,275 - Mock TTP - INFO - EXPECTED FAILURE: 'test2' (security control working)
+2025-09-11 11:14:35,276 - Mock TTP - INFO - Attempt 3: Executing with payload -> 'test3'
+2025-09-11 11:14:35,376 - Mock TTP - INFO - EXPECTED FAILURE: 'test3' (security control working)
+2025-09-11 11:15:05,427 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:07,431 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:09,433 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:11,434 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:13,436 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:15,437 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:18,443 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:19,443 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:20,445 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:21,448 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:21,450 - HeaderExtractor - WARNING - Failed to extract target version from logs: Driver error
+2025-09-11 11:15:22,195 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 11:15:22,196 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 11:15:22,196 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 11:15:22,196 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 11:15:22,196 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 11:15:22,196 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 11:15:22,196 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 11:15:22,196 - Journey.Step.Test Step - ERROR - ✗ Action failed: Test Action
+2025-09-11 11:15:22,196 - Journey.Test Journey - ERROR - ✗ Step failed: Test Step
+2025-09-11 11:15:22,493 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 11:15:22,495 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:22,496 - Journey.Test Journey - INFO - Journey completed in 0.30 seconds
+2025-09-11 11:15:22,496 - Journey.Test Journey - INFO - Overall success: False
+2025-09-11 11:15:22,496 - Journey.Test Journey - INFO - Steps: 0/1 succeeded
+2025-09-11 11:15:22,496 - Journey.Test Journey - INFO - Actions: 0/1 succeeded
+2025-09-11 11:15:22,500 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 11:15:22,500 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 11:15:22,500 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 11:15:22,500 - Journey.Test Journey - INFO - Authentication required: Test Auth
+2025-09-11 11:15:22,501 - Journey.Test Journey - INFO - Authentication successful
+2025-09-11 11:15:22,501 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 11:15:22,501 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 11:15:22,501 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 11:15:22,501 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 11:15:22,501 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-09-11 11:15:22,501 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-09-11 11:15:22,501 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-09-11 11:15:22,838 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 11:15:22,839 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:22,843 - Journey.Test Journey - INFO - Journey completed in 0.34 seconds
+2025-09-11 11:15:22,843 - Journey.Test Journey - INFO - Overall success: True
+2025-09-11 11:15:22,843 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-09-11 11:15:22,843 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-09-11 11:15:22,845 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 11:15:22,849 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 11:15:22,849 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 11:15:22,849 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 11:15:22,849 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 11:15:22,849 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 11:15:22,849 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 11:15:22,849 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-09-11 11:15:22,849 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-09-11 11:15:22,849 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-09-11 11:15:23,188 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 11:15:23,189 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:15:23,189 - Journey.Test Journey - INFO - Journey completed in 0.34 seconds
+2025-09-11 11:15:23,189 - Journey.Test Journey - INFO - Overall success: True
+2025-09-11 11:15:23,189 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-09-11 11:15:23,189 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-09-11 11:15:23,204 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 11:15:23,204 - Orchestrator.Test Scale - INFO - STARTING ORCHESTRATION: Test Scale
+2025-09-11 11:15:23,204 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 11:15:23,204 - Orchestrator.Test Scale - INFO - Test: Test TTP (TTP)
+2025-09-11 11:15:23,204 - Orchestrator.Test Scale - INFO - Target URL: http://test.com
+2025-09-11 11:15:23,204 - Orchestrator.Test Scale - INFO - Strategy: sequential
+2025-09-11 11:15:23,204 - Orchestrator.Test Scale - INFO - Replications: 3
+2025-09-11 11:15:23,204 - Orchestrator.Test Scale - INFO - Max Workers: 2
+2025-09-11 11:15:23,204 - Orchestrator.Test Scale - INFO - Executing TTP replication 1/3
+2025-09-11 11:15:23,205 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 11:15:23,205 - Test TTP - INFO - Description: Test Description
+2025-09-11 11:15:23,455 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 11:15:23,455 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 11:15:25,191 - Test TTP - INFO - EXPECTED SUCCESS: 'test_payload_0'
+2025-09-11 11:15:25,191 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 11:15:26,291 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 11:15:26,291 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 11:15:27,370 - Test TTP - INFO - EXPECTED SUCCESS: 'test_payload_2'
+2025-09-11 11:15:27,446 - Test TTP - INFO - 
+==================================================
+2025-09-11 11:15:27,446 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 11:15:27,446 - Test TTP - INFO - ==================================================
+2025-09-11 11:15:27,446 - Test TTP - INFO - Total results: 2
+2025-09-11 11:15:27,446 - Test TTP - INFO - Expected successes: 2
+2025-09-11 11:15:27,446 - Test TTP - INFO -   ✓ Payload: test_payload_0 | URL: https://www.squadhelp.com/name/Test
+2025-09-11 11:15:27,446 - Test TTP - INFO -   ✓ Payload: test_payload_2 | URL: https://www.squadhelp.com/name/Test
+2025-09-11 11:15:27,446 - Test TTP - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-09-11 11:15:27,446 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 1
+2025-09-11 11:15:27,457 - Orchestrator.Test Scale - INFO - Ramp-up delay: 0.01s before execution 2
+2025-09-11 11:15:27,467 - Orchestrator.Test Scale - INFO - Executing TTP replication 2/3
+2025-09-11 11:15:27,467 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 11:15:27,467 - Test TTP - INFO - Description: Test Description
+2025-09-11 11:15:27,736 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 11:15:27,736 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 11:15:31,335 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_0' (security control working)
+2025-09-11 11:15:31,336 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 11:15:32,433 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 11:15:32,433 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 11:15:33,518 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_2' (security control working)
+2025-09-11 11:15:33,572 - Test TTP - INFO - 
+==================================================
+2025-09-11 11:15:33,572 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 11:15:33,572 - Test TTP - INFO - ==================================================
+2025-09-11 11:15:33,572 - Test TTP - INFO - No successes detected (expected to find vulnerabilities).
+2025-09-11 11:15:33,572 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 2
+2025-09-11 11:15:33,583 - Orchestrator.Test Scale - INFO - Ramp-up delay: 0.01s before execution 3
+2025-09-11 11:15:33,593 - Orchestrator.Test Scale - INFO - Executing TTP replication 3/3
+2025-09-11 11:15:33,593 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 11:15:33,593 - Test TTP - INFO - Description: Test Description
+2025-09-11 11:15:33,837 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 11:15:33,837 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 11:15:37,530 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_0' (security control working)
+2025-09-11 11:15:37,531 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 11:15:38,613 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 11:15:38,614 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 11:15:39,684 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_2' (security control working)
+2025-09-11 11:15:39,739 - Test TTP - INFO - 
+==================================================
+2025-09-11 11:15:39,739 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 11:15:39,739 - Test TTP - INFO - ==================================================
+2025-09-11 11:15:39,739 - Test TTP - INFO - No successes detected (expected to find vulnerabilities).
+2025-09-11 11:15:39,739 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 3
+2025-09-11 11:15:39,749 - Orchestrator.Test Scale - INFO - 
+============================================================
+2025-09-11 11:15:39,749 - Orchestrator.Test Scale - INFO - ORCHESTRATION SUMMARY: Test Scale
+2025-09-11 11:15:39,749 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 11:15:39,749 - Orchestrator.Test Scale - INFO - Strategy: sequential
+2025-09-11 11:15:39,749 - Orchestrator.Test Scale - INFO - Executions: 1/3 successful (33.3%)
+2025-09-11 11:15:39,749 - Orchestrator.Test Scale - INFO - Total Time: 16.54s
+2025-09-11 11:15:39,749 - Orchestrator.Test Scale - INFO - Average Time: 5.51s
+2025-09-11 11:15:39,749 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 11:35:42,446 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:35:42,446 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:35:42,447 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:35:42,447 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:35:42,448 - Mock TTP - INFO - Starting TTP: 'Mock TTP' on http://test.com
+2025-09-11 11:35:42,448 - Mock TTP - INFO - Description: A mock TTP for testing behaviors
+2025-09-11 11:35:42,448 - Mock TTP - INFO - Using behavior: Mock Behavior
+2025-09-11 11:35:42,448 - Mock TTP - INFO - Behavior description: Mock behavior for testing
+2025-09-11 11:35:42,448 - Mock TTP - INFO - Attempt 1: Executing with payload -> 'test1'
+2025-09-11 11:35:42,548 - Mock TTP - INFO - EXPECTED FAILURE: 'test1' (security control working)
+2025-09-11 11:35:42,549 - Mock TTP - INFO - Attempt 2: Executing with payload -> 'test2'
+2025-09-11 11:35:42,649 - Mock TTP - INFO - EXPECTED FAILURE: 'test2' (security control working)
+2025-09-11 11:35:42,649 - Mock TTP - INFO - Attempt 3: Executing with payload -> 'test3'
+2025-09-11 11:35:42,750 - Mock TTP - INFO - EXPECTED FAILURE: 'test3' (security control working)
+2025-09-11 11:36:06,011 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:08,015 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:10,017 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:12,017 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:14,019 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:16,020 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:19,024 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:20,025 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:21,028 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:22,028 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:22,033 - HeaderExtractor - WARNING - Failed to extract target version from logs: Driver error
+2025-09-11 11:36:23,887 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 11:36:23,887 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 11:36:23,887 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 11:36:23,887 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 11:36:23,887 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 11:36:23,887 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 11:36:23,887 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 11:36:23,887 - Journey.Step.Test Step - ERROR - ✗ Action failed: Test Action
+2025-09-11 11:36:23,887 - Journey.Test Journey - ERROR - ✗ Step failed: Test Step
+2025-09-11 11:36:25,417 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 11:36:25,417 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:25,417 - Journey.Test Journey - INFO - Journey completed in 1.53 seconds
+2025-09-11 11:36:25,417 - Journey.Test Journey - INFO - Overall success: False
+2025-09-11 11:36:25,417 - Journey.Test Journey - INFO - Steps: 0/1 succeeded
+2025-09-11 11:36:25,418 - Journey.Test Journey - INFO - Actions: 0/1 succeeded
+2025-09-11 11:36:25,419 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 11:36:25,419 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 11:36:25,419 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 11:36:25,419 - Journey.Test Journey - INFO - Authentication required: Test Auth
+2025-09-11 11:36:25,419 - Journey.Test Journey - INFO - Authentication successful
+2025-09-11 11:36:25,419 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 11:36:25,419 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 11:36:25,419 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 11:36:25,419 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 11:36:25,419 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-09-11 11:36:25,419 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-09-11 11:36:25,419 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-09-11 11:36:25,717 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 11:36:25,718 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:25,718 - Journey.Test Journey - INFO - Journey completed in 0.30 seconds
+2025-09-11 11:36:25,718 - Journey.Test Journey - INFO - Overall success: True
+2025-09-11 11:36:25,718 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-09-11 11:36:25,718 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-09-11 11:36:25,719 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-09-11 11:36:25,719 - Journey.Test Journey - INFO - Description: Test Description
+2025-09-11 11:36:25,719 - Journey.Test Journey - INFO - Steps: 1
+2025-09-11 11:36:25,720 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-09-11 11:36:25,720 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-09-11 11:36:25,720 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-09-11 11:36:25,720 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-09-11 11:36:25,720 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-09-11 11:36:25,720 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-09-11 11:36:25,720 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-09-11 11:36:25,998 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-09-11 11:36:25,999 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-09-11 11:36:25,999 - Journey.Test Journey - INFO - Journey completed in 0.28 seconds
+2025-09-11 11:36:25,999 - Journey.Test Journey - INFO - Overall success: True
+2025-09-11 11:36:25,999 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-09-11 11:36:25,999 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-09-11 11:36:26,031 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 11:36:26,031 - Orchestrator.Test Scale - INFO - STARTING ORCHESTRATION: Test Scale
+2025-09-11 11:36:26,031 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 11:36:26,031 - Orchestrator.Test Scale - INFO - Test: Test TTP (TTP)
+2025-09-11 11:36:26,031 - Orchestrator.Test Scale - INFO - Target URL: http://test.com
+2025-09-11 11:36:26,031 - Orchestrator.Test Scale - INFO - Strategy: sequential
+2025-09-11 11:36:26,031 - Orchestrator.Test Scale - INFO - Replications: 3
+2025-09-11 11:36:26,031 - Orchestrator.Test Scale - INFO - Max Workers: 2
+2025-09-11 11:36:26,031 - Orchestrator.Test Scale - INFO - Executing TTP replication 1/3
+2025-09-11 11:36:26,032 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 11:36:26,032 - Test TTP - INFO - Description: Test Description
+2025-09-11 11:36:27,000 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 11:36:27,000 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 11:36:28,837 - Test TTP - INFO - EXPECTED SUCCESS: 'test_payload_0'
+2025-09-11 11:36:28,837 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 11:36:29,913 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 11:36:29,913 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 11:36:31,027 - Test TTP - INFO - EXPECTED SUCCESS: 'test_payload_2'
+2025-09-11 11:36:31,104 - Test TTP - INFO - 
+==================================================
+2025-09-11 11:36:31,104 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 11:36:31,104 - Test TTP - INFO - ==================================================
+2025-09-11 11:36:31,104 - Test TTP - INFO - Total results: 2
+2025-09-11 11:36:31,104 - Test TTP - INFO - Expected successes: 2
+2025-09-11 11:36:31,104 - Test TTP - INFO -   ✓ Payload: test_payload_0 | URL: https://www.squadhelp.com/name/Test
+2025-09-11 11:36:31,104 - Test TTP - INFO -   ✓ Payload: test_payload_2 | URL: https://www.squadhelp.com/name/Test
+2025-09-11 11:36:31,104 - Test TTP - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-09-11 11:36:31,104 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 1
+2025-09-11 11:36:31,115 - Orchestrator.Test Scale - INFO - Ramp-up delay: 0.01s before execution 2
+2025-09-11 11:36:31,125 - Orchestrator.Test Scale - INFO - Executing TTP replication 2/3
+2025-09-11 11:36:31,125 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 11:36:31,125 - Test TTP - INFO - Description: Test Description
+2025-09-11 11:36:31,362 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 11:36:31,363 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 11:36:33,195 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_0' (security control working)
+2025-09-11 11:36:33,195 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 11:36:34,301 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 11:36:34,301 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 11:36:35,367 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_2' (security control working)
+2025-09-11 11:36:35,421 - Test TTP - INFO - 
+==================================================
+2025-09-11 11:36:35,421 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 11:36:35,421 - Test TTP - INFO - ==================================================
+2025-09-11 11:36:35,421 - Test TTP - INFO - No successes detected (expected to find vulnerabilities).
+2025-09-11 11:36:35,421 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 2
+2025-09-11 11:36:35,431 - Orchestrator.Test Scale - INFO - Ramp-up delay: 0.01s before execution 3
+2025-09-11 11:36:35,441 - Orchestrator.Test Scale - INFO - Executing TTP replication 3/3
+2025-09-11 11:36:35,441 - Test TTP - INFO - Starting TTP: 'Test TTP' on http://test.com
+2025-09-11 11:36:35,441 - Test TTP - INFO - Description: Test Description
+2025-09-11 11:36:35,680 - Test TTP - INFO - WebDriver initialized.
+2025-09-11 11:36:35,680 - Test TTP - INFO - Attempt 1: Executing with payload -> 'test_payload_0'
+2025-09-11 11:36:37,466 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_0' (security control working)
+2025-09-11 11:36:37,467 - Test TTP - INFO - Attempt 2: Executing with payload -> 'test_payload_1'
+2025-09-11 11:36:38,549 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_1' (security control working)
+2025-09-11 11:36:38,550 - Test TTP - INFO - Attempt 3: Executing with payload -> 'test_payload_2'
+2025-09-11 11:36:39,644 - Test TTP - INFO - EXPECTED FAILURE: 'test_payload_2' (security control working)
+2025-09-11 11:36:39,700 - Test TTP - INFO - 
+==================================================
+2025-09-11 11:36:39,700 - Test TTP - INFO - TTP SUMMARY: Test TTP
+2025-09-11 11:36:39,700 - Test TTP - INFO - ==================================================
+2025-09-11 11:36:39,700 - Test TTP - INFO - No successes detected (expected to find vulnerabilities).
+2025-09-11 11:36:39,700 - Orchestrator.Test Scale - INFO - Cool-down delay: 0.01s after execution 3
+2025-09-11 11:36:39,710 - Orchestrator.Test Scale - INFO - 
+============================================================
+2025-09-11 11:36:39,711 - Orchestrator.Test Scale - INFO - ORCHESTRATION SUMMARY: Test Scale
+2025-09-11 11:36:39,711 - Orchestrator.Test Scale - INFO - ============================================================
+2025-09-11 11:36:39,711 - Orchestrator.Test Scale - INFO - Strategy: sequential
+2025-09-11 11:36:39,711 - Orchestrator.Test Scale - INFO - Executions: 1/3 successful (33.3%)
+2025-09-11 11:36:39,711 - Orchestrator.Test Scale - INFO - Total Time: 13.68s
+2025-09-11 11:36:39,711 - Orchestrator.Test Scale - INFO - Average Time: 4.56s
+2025-09-11 11:36:39,711 - Orchestrator.Test Scale - INFO - ============================================================
