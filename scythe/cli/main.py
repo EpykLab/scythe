@@ -37,7 +37,35 @@ from scythe.behaviors import HumanBehavior
 
 COMPATIBLE_VERSIONS = ["1.2.3"]
 
-def scythe_test_definition(args):
+def check_url_available(url) -> bool | None:
+    import requests
+    if not url:
+        return False
+    if not (url.startswith("http://") or url.startswith("https://")):
+        url = "http://" + url
+    try:
+        r = requests.get(url, timeout=5)
+        return r.status_code < 400
+    except requests.exceptions.RequestException:
+        return False
+
+def check_version_in_response_header(args) -> bool:
+    import requests
+    url = args.url
+    if url and not (url.startswith("http://") or url.startswith("https://")):
+        url = "http://" + url
+    r = requests.get(url)
+    h = r.headers
+
+    version = h.get('x-scythe-target-version')
+
+    if not version or version not in COMPATIBLE_VERSIONS:
+        print("This test is not compatible with the version of Scythe you are trying to run.")
+        print("Please update Scythe and try again.")
+        return False
+    return True
+
+def scythe_test_definition(args) -> bool:
     # TODO: implement your test using Scythe primitives.
     # Example placeholder that simply passes.
     return True
@@ -45,12 +73,32 @@ def scythe_test_definition(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Scythe test script")
-    parser.add_argument('--url', help='Target URL (overridden by localhost unless FORCE_USE_CLI_URL=1)')
+    parser.add_argument(
+        '--url',
+        help='Target URL')
+    parser.add_argument(
+        '--gate-versions',
+        default=True,
+        action='store_false',
+        dest='gate_versions',
+        help='Gate versions to test against')
+
     args = parser.parse_args()
 
-    ok = scythe_test_definition(args)
-    sys.exit(0 if ok else 1)
-
+    if check_url_available(args.url):
+        if args.gate_versions:
+            if check_version_in_response_header(args):
+                ok = scythe_test_definition(args)
+                sys.exit(0 if ok else 1)
+            else:
+                print("No compatible version found in response header.")
+                sys.exit(1)
+        else:
+            ok = scythe_test_definition(args)
+            sys.exit(0 if ok else 1)
+    else:
+        print("URL not available.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
@@ -198,7 +246,7 @@ def _parse_version_from_output(output: str) -> Optional[str]:
     return None
 
 
-def _run_test(project_root: str, name: str) -> Tuple[int, str, Optional[str]]:
+def _run_test(project_root: str, name: str, extra_args: Optional[List[str]] = None) -> Tuple[int, str, Optional[str]]:
     filename = name if name.endswith(".py") else f"{name}.py"
     test_path = os.path.join(project_root, PROJECT_DIRNAME, TESTS_DIRNAME, filename)
     if not os.path.exists(test_path):
@@ -211,9 +259,16 @@ def _run_test(project_root: str, name: str) -> Tuple[int, str, Optional[str]]:
     if repo_root not in existing_pp.split(os.pathsep):
         env['PYTHONPATH'] = os.pathsep.join([p for p in [existing_pp, repo_root] if p])
 
+    # Normalize extra args (strip a leading "--" if provided as a separator)
+    cmd_args: List[str] = []
+    if extra_args:
+        cmd_args = list(extra_args)
+        if len(cmd_args) > 0 and cmd_args[0] == "--":
+            cmd_args = cmd_args[1:]
+
     # Execute the test as a subprocess using the same interpreter
     proc = subprocess.run(
-        [sys.executable, test_path],
+        [sys.executable, test_path, *cmd_args],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -364,6 +419,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_run = sub.add_parser("run", help="Run a test from scythe_tests and record the run")
     p_run.add_argument("name", help="Name of the test to run (e.g., login_smoke or login_smoke.py)")
+    p_run.add_argument(
+        "test_args",
+        nargs=argparse.REMAINDER,
+        help="Arguments to pass to the test script (use -- to separate)",
+    )
 
     p_db = sub.add_parser("db", help="Database utilities")
     sub_db = p_db.add_subparsers(dest="db_cmd", required=True)
@@ -397,7 +457,10 @@ def _legacy_main(argv: Optional[List[str]] = None) -> int:
             project_root = _find_project_root()
             if not project_root:
                 raise ScytheCLIError("Not inside a Scythe project. Run 'scythe init' first.")
-            code, output, version = _run_test(project_root, args.name)
+            extra = getattr(args, "test_args", []) or []
+            if extra and len(extra) > 0 and extra[0] == "--":
+                extra = extra[1:]
+            code, output, version = _run_test(project_root, args.name, extra)
             _record_run(project_root, args.name, code, output, version)
             print(output)
             return code
@@ -468,15 +531,28 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"Created test: {path}")
         return 0
 
-    @app.command()
+    @app.command(context_settings={"allow_extra_args": True, "ignore_unknown_options": True})
     def run(
-        name: str = typer.Argument(..., help="Name of the test to run (e.g., login_smoke or login_smoke.py)")
+        ctx: typer.Context,
+        name: str = typer.Argument(..., help="Name of the test to run (e.g., login_smoke or login_smoke.py)"),
+        test_args: List[str] = typer.Argument(
+            None,
+            help="Arguments to pass to the test script (you can pass options directly or use -- to separate)",
+            metavar="[-- ARGS...]",
+        ),
     ) -> int:
         """Run a test from scythe_tests and record the run"""
         project_root = _find_project_root()
         if not project_root:
             raise ScytheCLIError("Not inside a Scythe project. Run 'scythe init' first.")
-        code, output, version = _run_test(project_root, name)
+        extra: List[str] = []
+        if test_args:
+            extra.extend(list(test_args))
+        if getattr(ctx, "args", None):
+            extra.extend(list(ctx.args))
+        if extra and len(extra) > 0 and extra[0] == "--":
+            extra = extra[1:]
+        code, output, version = _run_test(project_root, name, extra)
         _record_run(project_root, name, code, output, version)
         print(output)
         return code
