@@ -102,7 +102,7 @@ class Step:
         """Add an action to this step."""
         self.actions.append(action)
     
-    def execute(self, driver: WebDriver, context: Dict[str, Any]) -> bool:
+    def execute(self, driver: WebDriver|None, context: Dict[str, Any]) -> bool:
         """
         Execute all actions in this step.
         
@@ -111,7 +111,7 @@ class Step:
             context: Shared context data
             
         Returns:
-            True if step succeeded, False otherwise
+            True if a step succeeded, False otherwise
         """
         logger = logging.getLogger(f"Journey.Step.{self.name}")
         logger.info(f"Executing step: {self.name}")
@@ -136,12 +136,14 @@ class Step:
                 result = action.execute(driver, context)
                 
                 # Store result
+                details = getattr(action, 'execution_data', {})
                 action_result = {
                     'action_name': action.name,
                     'action_description': action.description,
                     'expected': action.expected_result,
                     'actual': result,
-                    'timestamp': time.time()
+                    'timestamp': time.time(),
+                    'details': details.copy() if isinstance(details, dict) else {}
                 }
                 self.execution_results.append(action_result)
                 
@@ -156,6 +158,47 @@ class Step:
                 else:
                     if action.expected_result:
                         logger.error(f"✗ Action failed: {action.name}")
+                        # Emit diagnostic details when available (e.g., for API requests)
+                        try:
+                            ad = action_result.get('details', {}) or {}
+                            method = ad.get('request_method') or getattr(action, 'method', None)
+                            url = ad.get('url') or getattr(action, 'url', None)
+                            status = ad.get('status_code')
+                            dur = ad.get('duration_ms')
+                            if method or url or status is not None:
+                                parts = []
+                                if method:
+                                    parts.append(f"method={method}")
+                                if url:
+                                    parts.append(f"url={url}")
+                                if status is not None:
+                                    parts.append(f"status={status}")
+                                if dur is not None:
+                                    parts.append(f"duration_ms={dur}")
+                                logger.error("    Details: " + ", ".join(parts))
+                            req_headers = ad.get('request_headers')
+                            if req_headers:
+                                logger.error(f"    Request headers: {req_headers}")
+                            req_params = ad.get('request_params')
+                            if req_params:
+                                logger.error(f"    Request params: {req_params}")
+                            req_json = ad.get('request_json')
+                            if req_json is not None:
+                                logger.error(f"    Request JSON: {req_json}")
+                            req_data = ad.get('request_data')
+                            if req_data is not None:
+                                logger.error(f"    Request data: {req_data}")
+                            resp_headers = ad.get('response_headers')
+                            if resp_headers:
+                                logger.error(f"    Response headers: {resp_headers}")
+                            if 'response_json' in ad:
+                                logger.error(f"    Response JSON: {ad.get('response_json')}")
+                            elif 'response_text' in ad:
+                                logger.error(f"    Response text: {ad.get('response_text')}")
+                            if ad.get('error'):
+                                logger.error(f"    Error: {ad.get('error')}")
+                        except Exception:
+                            pass
                         failure_count += 1
                         if not self.continue_on_failure:
                             return False
@@ -165,6 +208,35 @@ class Step:
                 
             except Exception as e:
                 logger.error(f"Exception in action {action.name}: {str(e)}")
+                # Emit any available diagnostics even on exceptions
+                try:
+                    details = getattr(action, 'execution_data', {}) or {}
+                    if details:
+                        method = details.get('request_method') or getattr(action, 'method', None)
+                        url = details.get('url') or getattr(action, 'url', None)
+                        status = details.get('status_code')
+                        dur = details.get('duration_ms')
+                        parts = []
+                        if method:
+                            parts.append(f"method={method}")
+                        if url:
+                            parts.append(f"url={url}")
+                        if status is not None:
+                            parts.append(f"status={status}")
+                        if dur is not None:
+                            parts.append(f"duration_ms={dur}")
+                        if parts:
+                            logger.error("    Details: " + ", ".join(parts))
+                        if details.get('request_headers'):
+                            logger.error(f"    Request headers: {details.get('request_headers')}")
+                        if details.get('response_headers'):
+                            logger.error(f"    Response headers: {details.get('response_headers')}")
+                        if 'response_json' in details:
+                            logger.error(f"    Response JSON: {details.get('response_json')}")
+                        elif 'response_text' in details:
+                            logger.error(f"    Response text: {details.get('response_text')}")
+                except Exception:
+                    pass
                 failure_count += 1
                 if not self.continue_on_failure:
                     return False
@@ -260,7 +332,7 @@ class Journey:
             logger.error(f"Authentication failed: {str(e)}")
             return False
     
-    def execute(self, driver: WebDriver, target_url: str) -> Dict[str, Any]:
+    def execute(self, driver: WebDriver|None, target_url: str) -> Dict[str, Any]:
         """
         Execute the complete journey.
         
@@ -283,7 +355,9 @@ class Journey:
         start_time = time.time()
         
         # Set initial context
-        self.set_context('target_url', target_url)
+        # Normalize target_url to include scheme when missing (e.g., 'localhost:8080' -> 'http://localhost:8080')
+        normalized_target_url = HeaderExtractor._normalize_url(target_url) if isinstance(target_url, str) else target_url
+        self.set_context('target_url', normalized_target_url)
         self.set_context('journey_name', self.name)
         self.set_context('start_time', start_time)
         
@@ -391,6 +465,48 @@ class Journey:
                         'target_version': target_version
                     }
                     results['step_results'].append(step_result)
+
+                    # If the previous step exhausted the rate limit, pause before starting the next one
+                    try:
+                        # Prefer an explicit resume time set by actions
+                        resume_at = self.context.get('rate_limit_resume_at')
+                        now = time.time()
+                        if isinstance(resume_at, (int, float)) and resume_at > now:
+                            wait_s = min(resume_at - now, 30)
+                            if wait_s > 0:
+                                logger.info(f"Rate limit backoff in effect; waiting {wait_s:.2f}s before next step")
+                                time.sleep(wait_s)
+                        else:
+                            last_headers = (self.context.get('last_response_headers') or {})
+                            if isinstance(last_headers, dict) and last_headers:
+                                def _h(name: str):
+                                    name = (name or '').lower()
+                                    for k, v in last_headers.items():
+                                        if isinstance(k, str) and k.lower() == name:
+                                            return v
+                                    return None
+                                retry_after = _h('retry-after')
+                                if retry_after is not None:
+                                    try:
+                                        wait_s = int(str(retry_after).strip())
+                                        if wait_s > 0:
+                                            logger.info(f"Rate-limited by server (Retry-After={wait_s}s); pausing before next step")
+                                            time.sleep(min(wait_s, 30))
+                                    except Exception:
+                                        pass
+                                else:
+                                    remaining = _h('x-ratelimit-remaining')
+                                    reset = _h('x-ratelimit-reset')
+                                    if remaining is not None and str(remaining).strip() == '0' and reset is not None:
+                                        try:
+                                            wait_s = int(str(reset).strip())
+                                            if wait_s > 0:
+                                                logger.info(f"Rate limit reached (remaining=0). Waiting {wait_s}s for reset before next step")
+                                                time.sleep(min(wait_s, 30))
+                                        except Exception:
+                                            pass
+                    except Exception:
+                        pass
                     
                 except Exception as e:
                     logger.error(f"Exception in step {step.name}: {str(e)}")

@@ -1,4 +1,5 @@
 import time
+import logging
 from typing import Dict, Any, Optional
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
@@ -700,70 +701,180 @@ class ApiRequestAction(Action):
         if self.headers:
             final_headers.update(self.headers)
         
+        # Simple masking for sensitive headers
+        def _mask_headers(headers: Dict[str, Any]) -> Dict[str, Any]:
+            masked = {}
+            for k, v in (headers or {}).items():
+                if k is None:
+                    continue
+                key_lower = str(k).lower()
+                if key_lower in {"authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key", "x-auth-token"}:
+                    masked[k] = "***"
+                else:
+                    masked[k] = v
+            return masked
+        
         # Resolve URL: absolute or join with target_url from context
         from urllib.parse import urljoin
+        from ..core.headers import HeaderExtractor
         base_url = context.get('target_url') or ''
-        resolved_url = self.url if self.url.lower().startswith('http') else urljoin(base_url, self.url)
+        # Ensure base_url has a scheme so urljoin works with relative paths
+        if isinstance(base_url, str) and base_url and not base_url.lower().startswith(('http://', 'https://')):
+            base_url = HeaderExtractor._normalize_url(base_url)
+        if isinstance(self.url, str) and self.url.lower().startswith('http'):
+            resolved_url = self.url
+        else:
+            resolved_url = urljoin(base_url, self.url)
         
+        # Store request details early
+        self.store_result('request_method', self.method)
+        self.store_result('url', resolved_url)
+        if self.params:
+            self.store_result('request_params', self.params)
+        if self.body_json is not None:
+            self.store_result('request_json', self.body_json)
+        if self.data is not None:
+            self.store_result('request_data', self.data)
+        self.store_result('request_headers', _mask_headers(final_headers))
+        
+        logger = logging.getLogger("Journey.ApiRequestAction")
+        # Honor any pending rate-limit resume time set by previous actions/steps
         try:
-            response = session.request(
-                self.method,
-                resolved_url,
-                params=self.params or None,
-                json=self.body_json,
-                data=self.data,
-                headers=final_headers or None,
-                timeout=self.timeout,
-            )
-            
-            # Store details
-            self.store_result('url', resolved_url)
-            self.store_result('request_headers', final_headers)
-            self.store_result('status_code', getattr(response, 'status_code', None))
-            response_headers = dict(getattr(response, 'headers', {}) or {})
-            self.store_result('response_headers', response_headers)
-            # Publish to context for downstream version extraction
-            context['last_response_headers'] = response_headers
-            context['last_response_url'] = resolved_url
-            # Try JSON, fallback to text
-            body = None
-            parsed_model = None
-            validation_error = None
-            try:
-                body = response.json()
-                self.store_result('response_json', body)
-                # If a response_model is provided, attempt validation/parsing
-                if self.response_model is not None:
+            resume_at = context.get('rate_limit_resume_at')
+            now = time.time()
+            if isinstance(resume_at, (int, float)) and resume_at > now:
+                wait_s = min(resume_at - now, 30)
+                if wait_s > 0:
+                    self.store_result('waited_ms_before_request', int(wait_s * 1000))
                     try:
-                        # Pydantic v2 preferred: model_validate
-                        if hasattr(self.response_model, 'model_validate'):
-                            parsed_model = self.response_model.model_validate(body)
-                        else:
-                            # Pydantic v1 fallback
-                            parsed_model = self.response_model.parse_obj(body)
-                        self.store_result('response_model_instance', parsed_model)
-                        # Save into context for downstream actions
-                        key = self.response_model_context_key or 'last_response_model'
-                        context[key] = parsed_model
-                    except Exception as ve:
-                        validation_error = str(ve)
-                        self.store_result('response_validation_error', validation_error)
-            except Exception:
-                text = getattr(response, 'text', '')
-                # Limit stored text to keep logs light
-                self.store_result('response_text', text if text is None or len(text) <= 2000 else text[:2000])
-            
-            # Determine success (status-based by default)
-            if self.expected_status is not None:
-                http_ok = (getattr(response, 'status_code', None) == self.expected_status)
-            else:
-                http_ok = bool(getattr(response, 'ok', False))
-            
-            # Optionally fail on validation error
-            if self.response_model is not None and self.fail_on_validation_error and self.get_result('response_validation_error'):
-                return False if http_ok else False
-            
-            return http_ok
-        except Exception as e:
-            self.store_result('error', str(e))
-            return False
+                        logger.info(f"Delaying {wait_s:.2f}s due to prior rate limit (resume_at)")
+                    except Exception:
+                        pass
+                    time.sleep(wait_s)
+        except Exception:
+            pass
+
+        def _h(headers: Dict[str, Any], name: str):
+            lname = (name or '').lower()
+            for k, v in (headers or {}).items():
+                try:
+                    if isinstance(k, str) and k.lower() == lname:
+                        return v
+                except Exception:
+                    continue
+            return None
+
+        attempts = 2  # at most one retry on 429 for idempotent methods
+        last_exception = None
+        for attempt in range(attempts):
+            start_ts = time.time()
+            try:
+                response = session.request(
+                    self.method,
+                    resolved_url,
+                    params=self.params or None,
+                    json=self.body_json,
+                    data=self.data,
+                    headers=final_headers or None,
+                    timeout=self.timeout,
+                )
+                duration_ms = int((time.time() - start_ts) * 1000)
+                self.store_result('duration_ms', duration_ms)
+
+                # Store details
+                status_code = getattr(response, 'status_code', None)
+                self.store_result('status_code', status_code)
+                response_headers = dict(getattr(response, 'headers', {}) or {})
+                # Mask sensitive response headers
+                self.store_result('response_headers', _mask_headers(response_headers))
+                # Publish to context for downstream version extraction and rate-limit coordination
+                context['last_response_headers'] = response_headers
+                context['last_response_url'] = resolved_url
+
+                # Parse rate-limit headers
+                try:
+                    # Normalize numeric values
+                    remaining = _h(response_headers, 'X-RateLimit-Remaining')
+                    if remaining is None:
+                        remaining = _h(response_headers, 'X-Ratelimit-Remaining')
+                    reset = _h(response_headers, 'X-RateLimit-Reset')
+                    if reset is None:
+                        reset = _h(response_headers, 'X-Ratelimit-Reset')
+                    retry_after = _h(response_headers, 'Retry-After')
+
+                    # If explicit Retry-After or 429, set resume time and optionally retry
+                    if status_code == 429:
+                        wait_s = 0
+                        try:
+                            wait_s = int(str(retry_after).strip()) if retry_after is not None else 1
+                        except Exception:
+                            wait_s = 1
+                        wait_s = max(1, min(wait_s, 30))
+                        context['rate_limit_resume_at'] = time.time() + wait_s
+                        self.store_result('rate_limit_wait_s', wait_s)
+                        if attempt == 0 and self.method in {'GET', 'HEAD', 'OPTIONS'}:
+                            try:
+                                logger.info(f"Hit 429 Too Many Requests; backing off {wait_s}s and retrying once")
+                            except Exception:
+                                pass
+                            time.sleep(wait_s)
+                            continue  # retry once
+                    else:
+                        # If remaining == 0 and reset provided, set resume time
+                        try:
+                            if remaining is not None and str(remaining).strip() == '0' and reset is not None:
+                                wait_s2 = int(str(reset).strip())
+                                if wait_s2 > 0:
+                                    context['rate_limit_resume_at'] = time.time() + min(wait_s2, 30)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
+                # Try JSON, fallback to text
+                parsed_model = None
+                try:
+                    body = response.json()
+                    self.store_result('response_json', body)
+                    # If a response_model is provided, attempt validation/parsing
+                    if self.response_model is not None:
+                        try:
+                            # Pydantic v2 preferred: model_validate
+                            if hasattr(self.response_model, 'model_validate'):
+                                parsed_model = self.response_model.model_validate(body)
+                            else:
+                                # Pydantic v1 fallback
+                                parsed_model = self.response_model.parse_obj(body)
+                            self.store_result('response_model_instance', parsed_model)
+                            # Save into context for downstream actions
+                            key = self.response_model_context_key or 'last_response_model'
+                            context[key] = parsed_model
+                        except Exception as ve:
+                            self.store_result('response_validation_error', str(ve))
+                except Exception:
+                    text = getattr(response, 'text', '')
+                    # Limit stored text to keep logs light
+                    if text is not None and isinstance(text, str):
+                        self.store_result('response_text', text if len(text) <= 2000 else text[:2000])
+                    else:
+                        self.store_result('response_text', text)
+
+                # Determine success (status-based by default)
+                if self.expected_status is not None:
+                    http_ok = (getattr(response, 'status_code', None) == self.expected_status)
+                else:
+                    http_ok = bool(getattr(response, 'ok', False))
+
+                # Optionally fail on validation error
+                if self.response_model is not None and self.fail_on_validation_error and self.get_result('response_validation_error'):
+                    return False
+
+                return http_ok
+            except Exception as e:
+                last_exception = e
+                self.store_result('duration_ms', int((time.time() - start_ts) * 1000))
+                self.store_result('error', str(e))
+                break
+
+        # If we got here and had an exception or no return, fail
+        return False

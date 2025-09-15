@@ -20,6 +20,51 @@ class HeaderExtractor:
         self.logger = logging.getLogger("HeaderExtractor")
 
     @staticmethod
+    def _normalize_url(url: str) -> str:
+        """Ensure the URL has a scheme so requests can handle it."""
+        if not isinstance(url, str):
+            return url
+        lower = url.lower().strip()
+        if lower.startswith("http://") or lower.startswith("https://"):
+            return url
+        return f"http://{url}"
+
+    @staticmethod
+    def _is_static_asset(url: str, headers: Optional[Dict[str, Any]] = None) -> bool:
+        """Heuristically determine if a URL/log entry is a static asset (css/js/image/font/etc.)."""
+        try:
+            if not isinstance(url, str):
+                return False
+            u = url.lower()
+            # Common static file extensions
+            static_exts = (
+                '.css', '.js', '.mjs', '.map', '.png', '.jpg', '.jpeg', '.gif', '.svg', '.ico',
+                '.woff', '.woff2', '.ttf', '.otf', '.eot', '.webp', '.mp4', '.webm', '.mp3', '.wav'
+            )
+            if any(u.endswith(ext) for ext in static_exts):
+                return True
+            if '/static/' in u or '/assets/' in u:
+                return True
+            # Content-Type hint
+            if isinstance(headers, dict):
+                # case-insensitive lookup
+                ctype = None
+                for k, v in headers.items():
+                    if isinstance(k, str) and k.lower() == 'content-type':
+                        ctype = str(v).lower()
+                        break
+                if ctype and (ctype.startswith('text/css') or
+                              ctype.startswith('application/javascript') or
+                              ctype.startswith('text/javascript') or
+                              ctype.startswith('image/') or
+                              ctype.startswith('font/')):
+                    return True
+        except Exception:
+            # Be safe: if unsure, do not classify as static
+            return False
+        return False
+
+    @staticmethod
     def enable_logging_for_driver(chrome_options: Options) -> None:
         """
         Enable performance logging capabilities for Chrome WebDriver.
@@ -50,13 +95,14 @@ class HeaderExtractor:
             Version string if header found, None otherwise
         """
         try:
-            self.logger.debug(f"Making {method} request to {url} for header extraction")
+            norm_url = self._normalize_url(url)
+            self.logger.debug(f"Making {method} request to {norm_url} for header extraction")
             
             # Use HEAD by default for efficiency, fallback to GET if needed
             if method.upper() == "HEAD":
-                response = requests.head(url, timeout=timeout, allow_redirects=True)
+                response = requests.head(norm_url, timeout=timeout, allow_redirects=True)
             else:
-                response = requests.get(url, timeout=timeout, allow_redirects=True)
+                response = requests.get(norm_url, timeout=timeout, allow_redirects=True)
             
             # Check if request was successful
             response.raise_for_status()
@@ -71,7 +117,8 @@ class HeaderExtractor:
                 return None
                 
         except requests.exceptions.RequestException as e:
-            self.logger.warning(f"Failed to make {method} request to {url}: {e}")
+            hint = " (tip: include http:// or https://)" if isinstance(url, str) and not url.lower().startswith(("http://","https://")) else ""
+            self.logger.warning(f"Failed to make {method} request to {url}: {e}{hint}")
             return None
         except Exception as e:
             self.logger.warning(f"Unexpected error during banner grab: {e}")
@@ -90,12 +137,13 @@ class HeaderExtractor:
             Dictionary of all response headers
         """
         try:
-            self.logger.debug(f"Making {method} request to {url} for all headers")
+            norm_url = self._normalize_url(url)
+            self.logger.debug(f"Making {method} request to {norm_url} for all headers")
             
             if method.upper() == "HEAD":
-                response = requests.head(url, timeout=timeout, allow_redirects=True)
+                response = requests.head(norm_url, timeout=timeout, allow_redirects=True)
             else:
-                response = requests.get(url, timeout=timeout, allow_redirects=True)
+                response = requests.get(norm_url, timeout=timeout, allow_redirects=True)
                 
             response.raise_for_status()
             
@@ -103,7 +151,8 @@ class HeaderExtractor:
             return {k: str(v) for k, v in response.headers.items()}
             
         except requests.exceptions.RequestException as e:
-            self.logger.warning(f"Failed to get headers from {url}: {e}")
+            hint = " (tip: include http:// or https://)" if isinstance(url, str) and not url.lower().startswith(("http://","https://")) else ""
+            self.logger.warning(f"Failed to get headers from {url}: {e}{hint}")
             return {}
         except Exception as e:
             self.logger.warning(f"Unexpected error getting headers: {e}")
@@ -179,7 +228,11 @@ class HeaderExtractor:
                 self.logger.debug(f"Successfully extracted version '{version}' via banner grab")
                 return version
             else:
-                self.logger.debug("Banner grab failed, falling back to Selenium performance logs")
+                self.logger.debug("Banner grab failed")
+        
+        # In API mode (no driver), do not fall back to Selenium to avoid noisy warnings
+        if driver is None:
+            return None
         
         # Fall back to Selenium performance logs
         self.logger.debug("Using Selenium performance logs method")
@@ -222,6 +275,13 @@ class HeaderExtractor:
                         # Filter by target URL if specified
                         if target_url and target_url not in response_url:
                             continue
+
+                        # Ignore static assets (css/js/images/fonts) to avoid false detections/noise
+                        try:
+                            if self._is_static_asset(response_url, headers):
+                                continue
+                        except Exception:
+                            pass
 
                         # Look for the version header (case-insensitive)
                         version = self._find_version_header(headers)

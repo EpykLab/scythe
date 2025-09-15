@@ -147,7 +147,7 @@ class JourneyExecutor:
                 self.journey.set_context('auth_headers', auth_headers)
                 self.journey.set_context('auth_cookies', auth_cookies)
                 
-                # Execute journey with a None driver (API actions ignore driver)
+                # Execute a journey with a None driver (API actions ignore a driver)
                 self.execution_results = self.journey.execute(None, self.target_url)
             else:
                 # UI mode (default)
@@ -352,6 +352,45 @@ class JourneyExecutor:
                 
                 self.logger.info(f"  {status} Step {i}: {step_name} - {result_text} ({expected_text}){version_info}")
                 self.logger.info(f"    Actions: {len([a for a in actions if a.get('actual', False)])}/{len(actions)} succeeded")
+                # Print diagnostic details only for unexpected outcomes
+                for a in actions:
+                    actual = a.get('actual', False)
+                    expected = a.get('expected', True)
+                    if actual != expected:
+                        prefix = "✗ Action failed" if expected else "✗ Action unexpectedly succeeded"
+                        self.logger.error(f"    {prefix}: {a.get('action_name')}")
+                        ad = a.get('details', {}) or {}
+                        method = ad.get('request_method')
+                        url = ad.get('url')
+                        status_code = ad.get('status_code')
+                        dur = ad.get('duration_ms')
+                        parts = []
+                        if method:
+                            parts.append(f"method={method}")
+                        if url:
+                            parts.append(f"url={url}")
+                        if status_code is not None:
+                            parts.append(f"status={status_code}")
+                        if dur is not None:
+                            parts.append(f"duration_ms={dur}")
+                        if parts:
+                            self.logger.error("      Details: " + ", ".join(parts))
+                        if ad.get('request_headers'):
+                            self.logger.error(f"      Request headers: {ad.get('request_headers')}")
+                        if ad.get('request_params'):
+                            self.logger.error(f"      Request params: {ad.get('request_params')}")
+                        if ad.get('request_json') is not None:
+                            self.logger.error(f"      Request JSON: {ad.get('request_json')}")
+                        if ad.get('request_data') is not None:
+                            self.logger.error(f"      Request data: {ad.get('request_data')}")
+                        if ad.get('response_headers'):
+                            self.logger.error(f"      Response headers: {ad.get('response_headers')}")
+                        if 'response_json' in ad:
+                            self.logger.error(f"      Response JSON: {ad.get('response_json')}")
+                        elif 'response_text' in ad:
+                            self.logger.error(f"      Response text: {ad.get('response_text')}")
+                        if ad.get('error'):
+                            self.logger.error(f"      Error: {ad.get('error')}")
         
         # Version summary
         target_versions = self.execution_results.get('target_versions', [])
