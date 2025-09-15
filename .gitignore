@@ -9,7 +9,7 @@ ttp_test.log
 IMPLEMENTATION_COMPLETE.md
 .mypy_cache/
 .ropeproject/
-__pycache__/
+**/__pycache__/
 build/
 *egg*
 journey_test.log

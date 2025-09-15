@@ -503,7 +503,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         # Fallback to legacy argparse-based implementation if Typer is not available
         return _legacy_main(argv)
 
-    app = typer.Typer(add_completion=False, help="Scythe CLI")
+    app = typer.Typer(
+        add_completion=True,
+        no_args_is_help=True,
+        pretty_exceptions_show_locals=False,
+        help="Scythe CLI")
 
     @app.command()
     def init(
@@ -557,7 +561,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(output)
         return code
 
-    db_app = typer.Typer(help="Database utilities")
+    db_app = typer.Typer(
+        no_args_is_help=True,
+        help="Database utilities")
 
     @db_app.command("dump")
     def dump() -> int:
@@ -587,11 +593,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     app.add_typer(db_app, name="db")
 
-    if argv is None:
-        argv = sys.argv[1:]
-
     try:
-        rv = app(prog_name="scythe", args=argv, standalone_mode=False)
+        rv = app()
         return int(rv) if isinstance(rv, int) else 0
     except ScytheCLIError as e:
         print(f"Error: {e}", file=sys.stderr)
