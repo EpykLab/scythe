@@ -78,7 +78,7 @@ def main():
         help='Target URL')
     parser.add_argument(
         '--gate-versions',
-        default=True,
+        default=False,
         action='store_false',
         dest='gate_versions',
         help='Gate versions to test against')
