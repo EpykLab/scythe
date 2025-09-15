@@ -9,3 +9,4 @@ ttp_test.log
 IMPLEMENTATION_COMPLETE.md
 .mypy_cache/
 .ropeproject/
+__pycache__/

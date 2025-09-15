@@ -12,5 +12,8 @@ tasks:
     silent: true
   release:
     cmds:
-      - awk -v ver="$(cat VERSION)" 'BEGIN{FS=OFS="\""} /version\s*=/ {$2=ver} 1' setup.py.bak > setup.py.bak.tmp && mv setup.py.bak.tmp setup.py.bak
+      - awk -v ver="$(cat VERSION)" 'BEGIN{FS=OFS="\""} /version\s*=/ {$2=ver} 1' pyproject.toml> pyproject.toml.tmp && mv pyproject.toml.tmp pyproject.toml
+      - git add .
+      - git commit -m "bumped version for new release"
+      - git push
       - git push --tags
