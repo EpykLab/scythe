@@ -79,7 +79,7 @@ def main():
     parser.add_argument(
         '--gate-versions',
         default=False,
-        action='store_false',
+        action='store_true',
         dest='gate_versions',
         help='Gate versions to test against')
 
