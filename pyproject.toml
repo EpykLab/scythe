@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "scythe-ttp"
+dynamic = ["version"]  # Add this to enable dynamic version (and dependencies if you want)
 description = "An extensible framework for emulating attacker TTPs with Selenium."
 readme = {file = "README.md", content-type = "text/markdown"}
 authors = [{name = "EpykLab", email = "cyber@epyklab.com"}]
 requires-python = ">=3.8,<=3.13"
-version = "0.15.7"
 classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
@@ -19,7 +19,6 @@ classifiers = [
   "Topic :: Security",
   "Framework :: Pytest",
 ]
-
 dependencies = [
     "PySocks==1.7.1",
     "attrs==25.3.0",
@@ -43,10 +42,14 @@ dependencies = [
     "wsproto==1.2.0",
     "typer"
 ]
+# Remove the static version line entirely
 
 [project.scripts]
 scythe = "scythe.cli.main:main"
 
 [tool.setuptools]
-# Use find_packages and exclude tests/examples from the distribution
 packages = {find = {exclude = ["tests*", "examples*"]}}
+
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}  # Fix this to point to your actual VERSION file
+dependencies = {file = "requirements.txt"}  # Keep if using; otherwise remove if sticking with static deps list
