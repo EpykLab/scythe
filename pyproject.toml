@@ -50,7 +50,3 @@ scythe = "scythe.cli.main:main"
 [tool.setuptools]
 # Use find_packages and exclude tests/examples from the distribution
 packages = {find = {exclude = ["tests*", "examples*"]}}
-
-[tool.setuptools.dynamic]
-version = {file = "0.15.6"}
-dependencies = {file = "requirements.txt"}
