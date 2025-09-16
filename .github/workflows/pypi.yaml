@@ -26,6 +26,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Debug Git tags and version
+        run: |
+          git tag -l 'v*'  # List visible tags—check if the current one (e.g., v0.15.3) appears
+          git describe --tags --always  # Show what Git sees for the current commit
+          python -m pip install setuptools-scm  # Temp install for debug (remove later)
+          python -c "from setuptools_scm import get_version; print('Detected version:', get_version())" 
+
       - name: Install dependencies and build tools
         run: |
           python -m pip install --upgrade pip
