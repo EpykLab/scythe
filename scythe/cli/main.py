@@ -226,10 +226,8 @@ def _create_test(project_root: str, name: str) -> str:
 
     return filepath
 
-
-_VERSION_RE = re.compile(r"X-SCYTHE-TARGET-VERSION\s*[:=]\s*([\w\.-]+)")
-_DETECTED_LIST_RE = re.compile(r"Detected target versions: \[?([^\]]*)\]?")
-
+_VERSION_RE = re.compile(r"['\"]?X-Scythe-Target-Version['\"]?\s*:\s*['\"]?([\w.-]+)['\"]?")
+_DETECTED_LIST_RE = re.compile(r"Target versions detected:\s*\[?([^]]*)\]?")
 
 def _parse_version_from_output(output: str) -> Optional[str]:
     m = _VERSION_RE.search(output)
@@ -240,7 +238,7 @@ def _parse_version_from_output(output: str) -> Optional[str]:
     if m:
         inner = m.group(1)
         # extract first version-like token
-        mv = re.search(r"[\d]+(?:\.[\w\-]+)+", inner)
+        mv = re.search(r"\d+(?:\.[\w\-]+)+", inner)
         if mv:
             return mv.group(0)
     return None
