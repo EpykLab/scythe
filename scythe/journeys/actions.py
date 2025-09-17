@@ -659,6 +659,7 @@ class ApiRequestAction(Action):
     def __init__(self,
                  method: str,
                  url: str,
+                 flush: bool = False,
                  params: Optional[Dict[str, Any]] = None,
                  body_json: Optional[Dict[str, Any]] = None,
                  data: Optional[Dict[str, Any]] = None,
@@ -673,6 +674,7 @@ class ApiRequestAction(Action):
                  fail_on_validation_error: bool = False):
         self.method = method.upper()
         self.url = url
+        self.flush = flush
         self.params = params or {}
         self.body_json = body_json
         self.data = data
@@ -692,15 +694,15 @@ class ApiRequestAction(Action):
         if session is None:
             session = requests.Session()
             context['requests_session'] = session
-        
-        # Build headers: auth headers from context + action headers (action overrides)
+
+        # Build headers: auth headers from context and action headers (action overrides)
         final_headers = {}
         auth_headers = context.get('auth_headers', {}) or {}
         if auth_headers:
             final_headers.update(auth_headers)
         if self.headers:
             final_headers.update(self.headers)
-        
+
         # Simple masking for sensitive headers
         def _mask_headers(headers: Dict[str, Any]) -> Dict[str, Any]:
             masked = {}
@@ -713,7 +715,7 @@ class ApiRequestAction(Action):
                 else:
                     masked[k] = v
             return masked
-        
+
         # Resolve URL: absolute or join with target_url from context
         from urllib.parse import urljoin
         from ..core.headers import HeaderExtractor
@@ -725,7 +727,7 @@ class ApiRequestAction(Action):
             resolved_url = self.url
         else:
             resolved_url = urljoin(base_url, self.url)
-        
+
         # Store request details early
         self.store_result('request_method', self.method)
         self.store_result('url', resolved_url)
@@ -736,7 +738,7 @@ class ApiRequestAction(Action):
         if self.data is not None:
             self.store_result('request_data', self.data)
         self.store_result('request_headers', _mask_headers(final_headers))
-        
+
         logger = logging.getLogger("Journey.ApiRequestAction")
         # Honor any pending rate-limit resume time set by previous actions/steps
         try:
@@ -861,14 +863,25 @@ class ApiRequestAction(Action):
 
                 # Determine success (status-based by default)
                 if self.expected_status is not None:
-                    http_ok = (getattr(response, 'status_code', None) == self.expected_status)
+                    http_ok = (status_code == self.expected_status)
+                    if not http_ok:
+                        self.store_result('status_mismatch', f"Expected status {self.expected_status}, got {status_code}")
+                        logger.warning(f"API request status mismatch: expected {self.expected_status}, got {status_code}")
                 else:
                     http_ok = bool(getattr(response, 'ok', False))
+
+                # Store the final status check result
+                self.store_result('http_status_ok', http_ok)
 
                 # Optionally fail on validation error
                 if self.response_model is not None and self.fail_on_validation_error and self.get_result('response_validation_error'):
                     return False
 
+                if self.flush:
+                    clear_requests_session(context)
+
+                # Return False if status doesn't match expected, regardless of expected_result
+                # The framework will then compare this with expected_result to determine test outcome
                 return http_ok
             except Exception as e:
                 last_exception = e
@@ -878,3 +891,12 @@ class ApiRequestAction(Action):
 
         # If we got here and had an exception or no return, fail
         return False
+
+def clear_requests_session(context: Dict[str, Any]):
+    """Clear the request session from the context."""
+    logger = logging.getLogger("Journey.ApiRequestAction")
+    session = context.get('requests_session')
+    if session is not None:
+        session.close()
+        context['requests_session'] = None
+        logger.info("Cleared requests session from context")
