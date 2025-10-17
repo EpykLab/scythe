@@ -439,81 +439,163 @@ class TTPAction(Action):
             True if TTP execution matches expected result, False otherwise
         """
         try:
-            # Determine target URL
-            if self.target_url:
-                url = self.target_url
-            elif 'current_url' in context:
-                url = context['current_url']
+            # Check execution mode
+            if self.ttp.execution_mode == 'api':
+                return self._execute_api_mode(driver, context)
             else:
-                url = driver.current_url
-            
-            # Navigate to URL if needed
-            if url != driver.current_url:
-                driver.get(url)
-            
-            # Execute TTP authentication if required
-            if self.ttp.requires_authentication():
-                auth_success = self.ttp.authenticate(driver, url)
-                if not auth_success:
-                    self.store_result('error', 'TTP authentication failed')
-                    return False
-            
-            # Execute TTP payloads
-            ttp_results = []
-            success_count = 0
-            total_count = 0
-            
-            for payload in self.ttp.get_payloads():
-                total_count += 1
-                
-                try:
-                    # Execute step
-                    self.ttp.execute_step(driver, payload)
-                    
-                    # Verify result
-                    result = self.ttp.verify_result(driver)
-                    
-                    ttp_results.append({
-                        'payload': str(payload),
-                        'success': result,
-                        'url': driver.current_url
-                    })
-                    
-                    if result:
-                        success_count += 1
-                        
-                except Exception as e:
-                    ttp_results.append({
-                        'payload': str(payload),
-                        'success': False,
-                        'error': str(e),
-                        'url': driver.current_url
-                    })
-            
-            # Store results
-            self.store_result('ttp_name', self.ttp.name)
-            self.store_result('total_payloads', total_count)
-            self.store_result('successful_payloads', success_count)
-            self.store_result('ttp_results', ttp_results)
-            self.store_result('success_rate', success_count / total_count if total_count > 0 else 0)
-            
-            # Update context
-            context[f'ttp_results_{self.ttp.name}'] = ttp_results
-            context['last_ttp_success_count'] = success_count
-            
-            # Determine action success based on expected result
-            has_successes = success_count > 0
-            
-            if self.expected_result:
-                # Expecting TTP to find vulnerabilities/succeed
-                return has_successes
-            else:
-                # Expecting TTP to fail (security controls working)
-                return not has_successes
+                return self._execute_ui_mode(driver, context)
                 
         except Exception as e:
             self.store_result('error', str(e))
             return False
+    
+    def _execute_ui_mode(self, driver: WebDriver, context: Dict[str, Any]) -> bool:
+        """Execute TTP in UI mode using Selenium."""
+        # Determine target URL
+        if self.target_url:
+            url = self.target_url
+        elif 'current_url' in context:
+            url = context['current_url']
+        else:
+            url = driver.current_url
+        
+        # Navigate to URL if needed
+        if url != driver.current_url:
+            driver.get(url)
+        
+        # Execute TTP authentication if required
+        if self.ttp.requires_authentication():
+            auth_success = self.ttp.authenticate(driver, url)
+            if not auth_success:
+                self.store_result('error', 'TTP authentication failed')
+                return False
+        
+        # Execute TTP payloads
+        ttp_results = []
+        success_count = 0
+        total_count = 0
+        
+        for payload in self.ttp.get_payloads():
+            total_count += 1
+            
+            try:
+                # Execute step
+                self.ttp.execute_step(driver, payload)
+                
+                # Verify result
+                result = self.ttp.verify_result(driver)
+                
+                ttp_results.append({
+                    'payload': str(payload),
+                    'success': result,
+                    'url': driver.current_url
+                })
+                
+                if result:
+                    success_count += 1
+                    
+            except Exception as e:
+                ttp_results.append({
+                    'payload': str(payload),
+                    'success': False,
+                    'error': str(e),
+                    'url': driver.current_url
+                })
+        
+        # Store results
+        self.store_result('ttp_name', self.ttp.name)
+        self.store_result('execution_mode', 'ui')
+        self.store_result('total_payloads', total_count)
+        self.store_result('successful_payloads', success_count)
+        self.store_result('ttp_results', ttp_results)
+        self.store_result('success_rate', success_count / total_count if total_count > 0 else 0)
+        
+        # Update context
+        context[f'ttp_results_{self.ttp.name}'] = ttp_results
+        context['last_ttp_success_count'] = success_count
+        
+        # Determine action success based on expected result
+        has_successes = success_count > 0
+        
+        if self.expected_result:
+            # Expecting TTP to find vulnerabilities/succeed
+            return has_successes
+        else:
+            # Expecting TTP to fail (security controls working)
+            return not has_successes
+    
+    def _execute_api_mode(self, driver: WebDriver, context: Dict[str, Any]) -> bool:
+        """Execute TTP in API mode using requests library."""
+        import requests
+        
+        # Get or create requests session
+        session = context.get('requests_session')
+        if session is None:
+            session = requests.Session()
+            context['requests_session'] = session
+        
+        # Set target URL in context if provided
+        if self.target_url:
+            context['target_url'] = self.target_url
+        
+        # Verify TTP supports API mode
+        if not self.ttp.supports_api_mode():
+            self.store_result('error', f'TTP {self.ttp.name} does not support API execution mode')
+            return False
+        
+        # Execute TTP payloads via API
+        ttp_results = []
+        success_count = 0
+        total_count = 0
+        
+        for payload in self.ttp.get_payloads():
+            total_count += 1
+            
+            try:
+                # Execute step via API
+                response = self.ttp.execute_step_api(session, payload, context)
+                
+                # Verify result
+                result = self.ttp.verify_result_api(response, context)
+                
+                ttp_results.append({
+                    'payload': str(payload),
+                    'success': result,
+                    'status_code': response.status_code,
+                    'url': response.url
+                })
+                
+                if result:
+                    success_count += 1
+                    
+            except Exception as e:
+                ttp_results.append({
+                    'payload': str(payload),
+                    'success': False,
+                    'error': str(e)
+                })
+        
+        # Store results
+        self.store_result('ttp_name', self.ttp.name)
+        self.store_result('execution_mode', 'api')
+        self.store_result('total_payloads', total_count)
+        self.store_result('successful_payloads', success_count)
+        self.store_result('ttp_results', ttp_results)
+        self.store_result('success_rate', success_count / total_count if total_count > 0 else 0)
+        
+        # Update context
+        context[f'ttp_results_{self.ttp.name}'] = ttp_results
+        context['last_ttp_success_count'] = success_count
+        
+        # Determine action success based on expected result
+        has_successes = success_count > 0
+        
+        if self.expected_result:
+            # Expecting TTP to find vulnerabilities/succeed
+            return has_successes
+        else:
+            # Expecting TTP to fail (security controls working)
+            return not has_successes
 
 
 class AssertAction(Action):
