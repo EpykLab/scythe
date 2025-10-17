@@ -68,6 +68,19 @@ def check_version_in_response_header(args) -> bool:
 def scythe_test_definition(args) -> bool:
     # TODO: implement your test using Scythe primitives.
     # Example placeholder that simply passes.
+    
+    # Example usage with TTPExecutor:
+    # from scythe.core.executor import TTPExecutor
+    # executor = TTPExecutor(ttp=my_ttp, target_url=args.url)
+    # executor.run()
+    # return executor.was_successful()  # Returns True if all results matched expectations
+    
+    # Example usage with JourneyExecutor:
+    # from scythe.journeys.executor import JourneyExecutor
+    # executor = JourneyExecutor(journey=my_journey, target_url=args.url)
+    # executor.run()
+    # return executor.was_successful()  # Returns True if journey succeeded as expected
+    
     return True
 
 

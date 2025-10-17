@@ -75,12 +75,15 @@ class VersionTestTTP(TTP):
             return False
 
 
-def run_ttp_example(target_url: str):
+def run_ttp_example(target_url: str) -> bool:
     """
     Run a TTP test that demonstrates version header extraction.
     
     Args:
         target_url: URL of the target web application
+        
+    Returns:
+        True if all test results matched expectations, False otherwise
     """
     print("="*60)
     print("TTP VERSION HEADER EXTRACTION EXAMPLE")
@@ -106,14 +109,20 @@ def run_ttp_example(target_url: str):
     )
     
     executor.run()
+    
+    # Return whether the test was successful
+    return executor.was_successful()
 
 
-def run_journey_example(target_url: str):
+def run_journey_example(target_url: str) -> bool:
     """
     Run a Journey test that demonstrates version header extraction.
     
     Args:
         target_url: URL of the target web application
+        
+    Returns:
+        True if journey succeeded as expected, False otherwise
     """
     print("\n" + "="*60)
     print("JOURNEY VERSION HEADER EXTRACTION EXAMPLE")
@@ -176,6 +185,9 @@ def run_journey_example(target_url: str):
             count = versions.count(version)
             percentage = (count / len(versions)) * 100
             print(f"  Version {version}: {count} times ({percentage:.1f}%)")
+    
+    # Return whether the journey was successful
+    return executor.was_successful()
 
 
 def main():
@@ -192,12 +204,17 @@ def main():
         print("Usage: python version_header_example.py <target_url>")
         print()
     
+    # Track overall success
+    all_tests_passed = True
+    
     try:
         # Run TTP example
-        run_ttp_example(target_url)
+        ttp_success = run_ttp_example(target_url)
+        all_tests_passed = all_tests_passed and ttp_success
         
         # Run Journey example
-        run_journey_example(target_url)
+        journey_success = run_journey_example(target_url)
+        all_tests_passed = all_tests_passed and journey_success
         
         print("\n" + "="*60)
         print("EXAMPLES COMPLETED")
@@ -220,11 +237,16 @@ def main():
         print("  response.setHeader('X-SCYTHE-TARGET-VERSION', '1.3.2')")
         print()
         
+        # Exit with appropriate code based on test results
+        sys.exit(0 if all_tests_passed else 1)
+        
     except KeyboardInterrupt:
         print("\nExample interrupted by user.")
+        sys.exit(130)  # Standard exit code for SIGINT
     except Exception as e:
         print(f"\nError running example: {e}")
         print("Make sure the target URL is accessible and try again.")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

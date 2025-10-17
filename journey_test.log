@@ -2150,3 +2150,52 @@ No X-SCYTHE-TARGET-VERSION headers detected in responses.
 2025-09-15 10:58:42,223 - Mock TTP - INFO - EXPECTED FAILURE: 'test2' (security control working)
 2025-09-15 10:58:42,223 - Mock TTP - INFO - Attempt 3: Executing with payload -> 'test3'
 2025-09-15 10:58:42,323 - Mock TTP - INFO - EXPECTED FAILURE: 'test3' (security control working)
+2025-10-16 19:33:37,900 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-10-16 19:33:37,900 - Journey.Test Journey - INFO - Description: Test Description
+2025-10-16 19:33:37,900 - Journey.Test Journey - INFO - Steps: 1
+2025-10-16 19:33:37,900 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-10-16 19:33:37,900 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-10-16 19:33:37,900 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-10-16 19:33:37,900 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-10-16 19:33:37,900 - Journey.Step.Test Step - ERROR - ✗ Action failed: Test Action
+2025-10-16 19:33:37,900 - Journey.Test Journey - ERROR - ✗ Step failed: Test Step
+2025-10-16 19:33:49,226 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-10-16 19:33:49,226 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-10-16 19:33:49,226 - Journey.Test Journey - INFO - Journey completed in 11.33 seconds
+2025-10-16 19:33:49,226 - Journey.Test Journey - INFO - Overall success: False
+2025-10-16 19:33:49,226 - Journey.Test Journey - INFO - Steps: 0/1 succeeded
+2025-10-16 19:33:49,226 - Journey.Test Journey - INFO - Actions: 0/1 succeeded
+2025-10-16 19:33:49,227 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-10-16 19:33:49,227 - Journey.Test Journey - INFO - Description: Test Description
+2025-10-16 19:33:49,227 - Journey.Test Journey - INFO - Steps: 1
+2025-10-16 19:33:49,228 - Journey.Test Journey - INFO - Authentication required: Test Auth
+2025-10-16 19:33:49,228 - Journey.Test Journey - INFO - Authentication successful
+2025-10-16 19:33:49,228 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-10-16 19:33:49,228 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-10-16 19:33:49,228 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-10-16 19:33:49,228 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-10-16 19:33:49,228 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-10-16 19:33:49,228 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-10-16 19:33:49,228 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-10-16 19:34:01,204 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-10-16 19:34:01,205 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-10-16 19:34:01,205 - Journey.Test Journey - INFO - Journey completed in 11.98 seconds
+2025-10-16 19:34:01,205 - Journey.Test Journey - INFO - Overall success: True
+2025-10-16 19:34:01,205 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-10-16 19:34:01,205 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-10-16 19:34:01,208 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-10-16 19:34:01,208 - Journey.Test Journey - INFO - Description: Test Description
+2025-10-16 19:34:01,208 - Journey.Test Journey - INFO - Steps: 1
+2025-10-16 19:34:01,208 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-10-16 19:34:01,208 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-10-16 19:34:01,208 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-10-16 19:34:01,208 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-10-16 19:34:01,208 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-10-16 19:34:01,208 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-10-16 19:34:01,208 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-10-16 19:34:06,377 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: 403 Client Error: Forbidden for url: https://www.squadhelp.com/name/Test
+2025-10-16 19:34:06,378 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-10-16 19:34:06,378 - Journey.Test Journey - INFO - Journey completed in 5.17 seconds
+2025-10-16 19:34:06,378 - Journey.Test Journey - INFO - Overall success: True
+2025-10-16 19:34:06,378 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-10-16 19:34:06,378 - Journey.Test Journey - INFO - Actions: 1/1 succeeded

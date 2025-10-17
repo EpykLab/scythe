@@ -406,6 +406,12 @@ class JourneyExecutor:
         else:
             self.logger.info("\nNo X-SCYTHE-TARGET-VERSION headers detected in responses.")
         
+        # Log overall test status (similar to TTPExecutor)
+        if self.was_successful():
+            self.logger.info("\n✓ TEST PASSED: Journey results matched expectations")
+        else:
+            self.logger.error("\n✗ TEST FAILED: Journey results differed from expected")
+        
         self.logger.info("="*60)
     
     def get_results(self) -> Optional[Dict[str, Any]]:

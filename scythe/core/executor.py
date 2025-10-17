@@ -40,6 +40,7 @@ class TTPExecutor:
         self.driver = None
         self.results = []
         self.header_extractor = HeaderExtractor()
+        self.has_test_failures = False  # Track if any test had unexpected results
 
     def _setup_driver(self):
         """Initializes the WebDriver."""
@@ -134,10 +135,12 @@ class TTPExecutor:
                         else:
                             version_info = f" | Version: {target_version}" if target_version else ""
                             self.logger.warning(f"UNEXPECTED SUCCESS: '{payload}' (expected to fail){version_info}")
+                            self.has_test_failures = True  # Mark as failure when result differs from expected
                     else:
                         consecutive_failures += 1
                         if self.ttp.expected_result:
                             self.logger.info(f"EXPECTED FAILURE: '{payload}' (security control working)")
+                            self.has_test_failures = True  # Mark as failure when result differs from expected
                         else:
                             self.logger.info(f"EXPECTED FAILURE: '{payload}'")
 
@@ -212,3 +215,18 @@ class TTPExecutor:
                 self.logger.info("No successes detected (expected to find vulnerabilities).")
             else:
                 self.logger.info("No successes detected (security controls working as expected).")
+        
+        # Log overall test status
+        if self.has_test_failures:
+            self.logger.error("\n✗ TEST FAILED: One or more test results differed from expected")
+        else:
+            self.logger.info("\n✓ TEST PASSED: All test results matched expectations")
+    
+    def was_successful(self) -> bool:
+        """
+        Check if all test results matched expectations.
+        
+        Returns:
+            True if all test results matched expectations, False otherwise
+        """
+        return not self.has_test_failures

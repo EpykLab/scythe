@@ -296,6 +296,63 @@ class TestExpectedResults(unittest.TestCase):
         
         self.assertTrue(ttp_pass.expected_result)
         self.assertFalse(ttp_fail.expected_result)
+    
+    @patch('scythe.core.executor.webdriver.Chrome')
+    def test_was_successful_with_expected_results(self, mock_webdriver):
+        """Test was_successful() returns True when all results match expectations."""
+        mock_webdriver.return_value = self.mock_driver
+        
+        # Test with expected successes
+        ttp = MockTTP(
+            name="Test TTP",
+            description="Test description",
+            expected_result=True,
+            success_results=[True, True]
+        )
+        
+        executor = TTPExecutor(ttp=ttp, target_url="http://test.com", headless=True)
+        executor.run()
+        
+        # Should return True since results matched expectations
+        self.assertTrue(executor.was_successful())
+    
+    @patch('scythe.core.executor.webdriver.Chrome')
+    def test_was_successful_with_unexpected_results(self, mock_webdriver):
+        """Test was_successful() returns False when results don't match expectations."""
+        mock_webdriver.return_value = self.mock_driver
+        
+        # Test with unexpected successes (expected to fail but succeeded)
+        ttp = MockTTP(
+            name="Test TTP",
+            description="Test description",
+            expected_result=False,
+            success_results=[True]
+        )
+        
+        executor = TTPExecutor(ttp=ttp, target_url="http://test.com", headless=True)
+        executor.run()
+        
+        # Should return False since we got unexpected success
+        self.assertFalse(executor.was_successful())
+    
+    @patch('scythe.core.executor.webdriver.Chrome')
+    def test_was_successful_with_unexpected_failures(self, mock_webdriver):
+        """Test was_successful() returns False when expected success but got failure."""
+        mock_webdriver.return_value = self.mock_driver
+        
+        # Test expecting success but getting failure
+        ttp = MockTTP(
+            name="Test TTP",
+            description="Test description",
+            expected_result=True,
+            success_results=[False, False]
+        )
+        
+        executor = TTPExecutor(ttp=ttp, target_url="http://test.com", headless=True)
+        executor.run()
+        
+        # Should return False since we expected success but got failures
+        self.assertFalse(executor.was_successful())
 
 
 if __name__ == '__main__':
