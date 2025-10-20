@@ -3,9 +3,10 @@ import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from .ttp import TTP
-from typing import Optional
+from typing import Optional, Dict, Any
 from ..behaviors.base import Behavior
 from .headers import HeaderExtractor
+import requests
 
 # Configure logging
 logging.basicConfig(
@@ -60,7 +61,18 @@ class TTPExecutor:
             self.logger.info(f"Using behavior: {self.behavior.name}")
             self.logger.info(f"Behavior description: {self.behavior.description}")
 
-        self._setup_driver()
+        # Check execution mode
+        if self.ttp.execution_mode == 'api':
+            self.logger.info("Execution mode: API")
+            self._run_api_mode()
+            return
+        else:
+            self.logger.info("Execution mode: UI")
+            self._setup_driver()
+            self._run_ui_mode()
+    
+    def _run_ui_mode(self):
+        """Execute TTP in UI mode using Selenium."""
 
         try:
             # Handle authentication if required
@@ -172,6 +184,108 @@ class TTPExecutor:
         finally:
             self._cleanup()
 
+    def _run_api_mode(self):
+        """Execute TTP in API mode using requests."""
+        session = requests.Session()
+        context: Dict[str, Any] = {
+            'target_url': self.target_url,
+            'auth_headers': {},
+            'rate_limit_resume_at': None
+        }
+        
+        try:
+            # Handle authentication if required (API mode)
+            if self.ttp.requires_authentication():
+                auth_name = self.ttp.authentication.name if self.ttp.authentication else "Unknown"
+                self.logger.info(f"Authentication required for TTP: {auth_name}")
+                
+                # Try to get auth headers directly
+                try:
+                    if hasattr(self.ttp.authentication, 'get_auth_headers'):
+                        auth_headers = self.ttp.authentication.get_auth_headers() or {}
+                        context['auth_headers'] = auth_headers
+                        session.headers.update(auth_headers)
+                        self.logger.info("Authentication headers applied")
+                except Exception as e:
+                    self.logger.warning(f"Failed to get auth headers: {e}")
+            
+            consecutive_failures = 0
+            
+            for i, payload in enumerate(self.ttp.get_payloads(), 1):
+                # Check if behavior wants to continue
+                if self.behavior and not self.behavior.should_continue(i, consecutive_failures):
+                    self.logger.info("Behavior requested to stop execution")
+                    break
+                
+                self.logger.info(f"Attempt {i}: Executing with payload -> '{payload}'")
+                
+                try:
+                    # Execute API request
+                    response = self.ttp.execute_step_api(session, payload, context)
+                    
+                    # Use behavior delay if available, otherwise use default
+                    if self.behavior:
+                        step_delay = self.behavior.get_step_delay(i)
+                    else:
+                        step_delay = self.delay
+                    
+                    time.sleep(step_delay)
+                    
+                    # Verify result
+                    success = self.ttp.verify_result_api(response, context)
+                    
+                    # Compare actual result with expected result
+                    if success:
+                        consecutive_failures = 0
+                        
+                        # Extract target version from response headers
+                        target_version = response.headers.get('X-SCYTHE-TARGET-VERSION') or response.headers.get('x-scythe-target-version')
+                        
+                        result_entry = {
+                            'payload': payload,
+                            'url': response.url if hasattr(response, 'url') else self.target_url,
+                            'expected': self.ttp.expected_result,
+                            'actual': True,
+                            'target_version': target_version
+                        }
+                        self.results.append(result_entry)
+                        
+                        if self.ttp.expected_result:
+                            version_info = f" | Version: {target_version}" if target_version else ""
+                            self.logger.info(f"EXPECTED SUCCESS: '{payload}'{version_info}")
+                        else:
+                            version_info = f" | Version: {target_version}" if target_version else ""
+                            self.logger.warning(f"UNEXPECTED SUCCESS: '{payload}' (expected to fail){version_info}")
+                            self.has_test_failures = True
+                    else:
+                        consecutive_failures += 1
+                        if self.ttp.expected_result:
+                            self.logger.info(f"EXPECTED FAILURE: '{payload}' (security control working)")
+                            self.has_test_failures = True
+                        else:
+                            self.logger.info(f"EXPECTED FAILURE: '{payload}'")
+                
+                except Exception as step_error:
+                    consecutive_failures += 1
+                    self.logger.error(f"Error during step {i}: {step_error}")
+                    
+                    # Let behavior handle the error
+                    if self.behavior:
+                        if not self.behavior.on_error(step_error, i):
+                            self.logger.info("Behavior requested to stop due to error")
+                            break
+                    else:
+                        # Default behavior: continue on most errors
+                        continue
+        
+        except KeyboardInterrupt:
+            self.logger.info("Test interrupted by user.")
+        except Exception as e:
+            self.logger.error(f"An unexpected error occurred: {e}", exc_info=True)
+        finally:
+            session.close()
+            self._cleanup()
+    
     def _cleanup(self):
         """Closes the WebDriver and prints a summary."""
         if self.driver:

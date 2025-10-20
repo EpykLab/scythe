@@ -2480,3 +2480,18 @@ No X-SCYTHE-TARGET-VERSION headers detected in responses.
 2025-10-16 22:22:33,930 - Test TTP - ERROR - 
 ✗ TEST FAILED: One or more test results differed from expected
 2025-10-16 22:22:33,934 - HeaderExtractor - WARNING - Failed to extract target version from logs: Driver error
+2025-10-20 09:52:29,650 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-10-20 09:52:29,661 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-10-20 09:52:29,665 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-10-20 09:52:29,665 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-10-20 09:52:29,667 - Mock TTP - INFO - Starting TTP: 'Mock TTP' on http://test.com
+2025-10-20 09:52:29,667 - Mock TTP - INFO - Description: A mock TTP for testing behaviors
+2025-10-20 09:52:29,667 - Mock TTP - INFO - Using behavior: Mock Behavior
+2025-10-20 09:52:29,667 - Mock TTP - INFO - Behavior description: Mock behavior for testing
+2025-10-20 09:52:29,667 - Mock TTP - INFO - Execution mode: UI
+2025-10-20 09:52:29,668 - Mock TTP - INFO - Attempt 1: Executing with payload -> 'test1'
+2025-10-20 09:52:29,768 - Mock TTP - INFO - EXPECTED FAILURE: 'test1' (security control working)
+2025-10-20 09:52:29,769 - Mock TTP - INFO - Attempt 2: Executing with payload -> 'test2'
+2025-10-20 09:52:29,869 - Mock TTP - INFO - EXPECTED FAILURE: 'test2' (security control working)
+2025-10-20 09:52:29,870 - Mock TTP - INFO - Attempt 3: Executing with payload -> 'test3'
+2025-10-20 09:52:29,970 - Mock TTP - INFO - EXPECTED FAILURE: 'test3' (security control working)
