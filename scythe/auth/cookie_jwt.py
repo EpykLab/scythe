@@ -49,14 +49,17 @@ class CookieJWTAuth(Authentication):
     
     Behavior:
     - In API mode: JourneyExecutor will call get_auth_cookies(); this class will
-      perform a POST to login_url (if token not cached), parse JSON, extract the
-      token via jwt_json_path, and return {cookie_name: token}.
+      perform a POST to login_url (if token not cached), extract the token, and 
+      return {cookie_name: token}.
     - In UI mode: authenticate() will ensure the browser has the cookie set for
       the target domain.
     
     Parameters:
     - content_type: Either "json" (default) to send payload as JSON, or "form" 
       to send as application/x-www-form-urlencoded form data.
+    - jwt_source: Either "json" (default) to extract JWT from the JSON response body
+      using jwt_json_path, or "cookie" to extract it from the Set-Cookie response header
+      using cookie_name.
     """
 
     def __init__(self,
@@ -69,6 +72,7 @@ class CookieJWTAuth(Authentication):
                  jwt_json_path: str = "token",
                  cookie_name: str = "stellarbridge",
                  content_type: str = "json",
+                 jwt_source: str = "json",
                  session: Optional[requests.Session] = None,
                  description: str = "Authenticate via API and set JWT cookie"):
         super().__init__(
@@ -84,6 +88,7 @@ class CookieJWTAuth(Authentication):
         self.jwt_json_path = jwt_json_path
         self.cookie_name = cookie_name
         self.content_type = content_type
+        self.jwt_source = jwt_source
         # Avoid importing requests in test environments; allow injected session
         self._session = session or (requests.Session() if requests is not None else None)
         self.token: Optional[str] = None
@@ -99,15 +104,32 @@ class CookieJWTAuth(Authentication):
                 resp = self._session.post(self.login_url, json=payload, timeout=15)
             # try json; raise on non-2xx to surface errors
             resp.raise_for_status()
-            data = resp.json()
         except Exception as e:
             raise AuthenticationError(f"Login request failed: {e}", self.name)
-        token = _extract_by_dot_path(data, self.jwt_json_path)
-        if not token or not isinstance(token, str):
-            raise AuthenticationError(
-                f"JWT not found at path '{self.jwt_json_path}' in login response",
-                self.name,
-            )
+        
+        # Extract token from either response cookies or JSON body
+        token = None
+        if self.jwt_source == "cookie":
+            # Extract from response cookies
+            token = resp.cookies.get(self.cookie_name)
+            if not token or not isinstance(token, str):
+                raise AuthenticationError(
+                    f"JWT cookie '{self.cookie_name}' not found in login response",
+                    self.name,
+                )
+        else:
+            # Extract from JSON response body
+            try:
+                data = resp.json()
+            except Exception as e:
+                raise AuthenticationError(f"Failed to parse JSON response: {e}", self.name)
+            token = _extract_by_dot_path(data, self.jwt_json_path)
+            if not token or not isinstance(token, str):
+                raise AuthenticationError(
+                    f"JWT not found at path '{self.jwt_json_path}' in login response",
+                    self.name,
+                )
+        
         self.token = token
         self.store_auth_data('jwt', token)
         self.store_auth_data('login_time', time.time())
