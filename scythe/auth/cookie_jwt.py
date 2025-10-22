@@ -53,6 +53,10 @@ class CookieJWTAuth(Authentication):
       token via jwt_json_path, and return {cookie_name: token}.
     - In UI mode: authenticate() will ensure the browser has the cookie set for
       the target domain.
+    
+    Parameters:
+    - content_type: Either "json" (default) to send payload as JSON, or "form" 
+      to send as application/x-www-form-urlencoded form data.
     """
 
     def __init__(self,
@@ -64,6 +68,7 @@ class CookieJWTAuth(Authentication):
                  extra_fields: Optional[Dict[str, Any]] = None,
                  jwt_json_path: str = "token",
                  cookie_name: str = "stellarbridge",
+                 content_type: str = "json",
                  session: Optional[requests.Session] = None,
                  description: str = "Authenticate via API and set JWT cookie"):
         super().__init__(
@@ -78,18 +83,20 @@ class CookieJWTAuth(Authentication):
         self.extra_fields = extra_fields or {}
         self.jwt_json_path = jwt_json_path
         self.cookie_name = cookie_name
+        self.content_type = content_type
         # Avoid importing requests in test environments; allow injected session
         self._session = session or (requests.Session() if requests is not None else None)
         self.token: Optional[str] = None
 
     def _login_and_get_token(self) -> str:
         payload: Dict[str, Any] = dict(self.extra_fields)
-        if self.username is not None:
-            payload[self.username_field] = self.username
-        if self.password is not None:
-            payload[self.password_field] = self.password
+        payload[self.username_field] = self.username
+        payload[self.password_field] = self.password
         try:
-            resp = self._session.post(self.login_url, json=payload, timeout=15)
+            if self.content_type == "form":
+                resp = self._session.post(self.login_url, data=payload, timeout=15)
+            else:
+                resp = self._session.post(self.login_url, json=payload, timeout=15)
             # try json; raise on non-2xx to surface errors
             resp.raise_for_status()
             data = resp.json()
