@@ -65,7 +65,7 @@ def check_version_in_response_header(args) -> bool:
         return False
     return True
 
-def scythe_test_definition(args) -> bool:
+def scythe_test_definition(args) -> int:
     # TODO: implement your test using Scythe primitives.
     # Example placeholder that simply passes.
 
