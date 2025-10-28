@@ -2495,3 +2495,187 @@ No X-SCYTHE-TARGET-VERSION headers detected in responses.
 2025-10-20 09:52:29,869 - Mock TTP - INFO - EXPECTED FAILURE: 'test2' (security control working)
 2025-10-20 09:52:29,870 - Mock TTP - INFO - Attempt 3: Executing with payload -> 'test3'
 2025-10-20 09:52:29,970 - Mock TTP - INFO - EXPECTED FAILURE: 'test3' (security control working)
+2025-10-27 18:15:28,284 - Journey.test API routes - INFO - ============================================================
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - STARTING JOURNEY: test API routes
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - ============================================================
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - Description: test API routes
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - Target URL: https://httpbin.org
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - Expected Result: SUCCESS
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - Steps: 1
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - Starting journey: test API routes
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - Description: test API routes
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - Steps: 1
+2025-10-27 18:15:28,285 - Journey.test API routes - INFO - Step 1/1: Test routes that should return 401
+2025-10-27 18:15:28,286 - Journey.Step.Test routes that should return 401 - INFO - Executing step: Test routes that should return 401
+2025-10-27 18:15:28,286 - Journey.Step.Test routes that should return 401 - INFO - Description: tests routes expecting 401
+2025-10-27 18:15:28,286 - Journey.Step.Test routes that should return 401 - INFO - Action 1/1: API GET /api/v1/auth/me
+2025-10-27 18:15:29,280 - Journey.ApiRequestAction - WARNING - API request status mismatch: expected 401, got 404
+2025-10-27 18:15:29,280 - Journey.Step.Test routes that should return 401 - ERROR - ✗ Action failed: API GET /api/v1/auth/me
+2025-10-27 18:15:29,280 - Journey.Step.Test routes that should return 401 - ERROR -     Details: method=GET, url=https://httpbin.org/api/v1/auth/me, status=404, duration_ms=993
+2025-10-27 18:15:29,280 - Journey.Step.Test routes that should return 401 - ERROR -     Response headers: {'Date': 'Tue, 28 Oct 2025 01:15:29 GMT', 'Content-Type': 'text/html', 'Content-Length': '233', 'Connection': 'keep-alive', 'Server': 'gunicorn/19.9.0', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true'}
+2025-10-27 18:15:29,280 - Journey.Step.Test routes that should return 401 - ERROR -     Response text: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again.</p>
+
+2025-10-27 18:15:29,280 - Journey.test API routes - ERROR - ✗ Step failed: Test routes that should return 401
+2025-10-27 18:15:30,387 - Journey.test API routes - INFO - Journey completed in 2.10 seconds
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - Overall success: False
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - Steps: 0/1 succeeded
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - Actions: 0/1 succeeded
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - 
+============================================================
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - JOURNEY SUMMARY: test API routes
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - ============================================================
+2025-10-27 18:15:30,388 - Journey.test API routes - WARNING - ✗ UNEXPECTED FAILURE: Journey was expected to succeed but failed in 2.10s
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - Steps: 0/1 succeeded (1 failed)
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - Actions: 0/1 succeeded (1 failed)
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - 
+Step Details:
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO -   ✗ Step 1: Test routes that should return 401 - FAILURE (unexpected)
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO -     Actions: 0/1 succeeded
+2025-10-27 18:15:30,388 - Journey.test API routes - ERROR -     ✗ Action failed: API GET /api/v1/auth/me
+2025-10-27 18:15:30,388 - Journey.test API routes - ERROR -       Details: method=GET, url=https://httpbin.org/api/v1/auth/me, status=404, duration_ms=993
+2025-10-27 18:15:30,388 - Journey.test API routes - ERROR -       Response headers: {'Date': 'Tue, 28 Oct 2025 01:15:29 GMT', 'Content-Type': 'text/html', 'Content-Length': '233', 'Connection': 'keep-alive', 'Server': 'gunicorn/19.9.0', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true'}
+2025-10-27 18:15:30,388 - Journey.test API routes - ERROR -       Response text: <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<title>404 Not Found</title>
+<h1>Not Found</h1>
+<p>The requested URL was not found on the server.  If you entered the URL manually please check your spelling and try again.</p>
+
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-10-27 18:15:30,388 - Journey.test API routes - ERROR - 
+✗ TEST FAILED: Journey results differed from expected
+2025-10-27 18:15:30,388 - Journey.test API routes - INFO - ============================================================
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - STARTING JOURNEY: test routes
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - Description: test routes
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - Target URL: https://httpbin.org
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - Expected Result: SUCCESS
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - Steps: 1
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - Starting journey: test routes
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - Description: test routes
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - Steps: 1
+2025-10-27 18:22:40,526 - Journey.test routes - INFO - Step 1/1: Test route expecting 401
+2025-10-27 18:22:40,526 - Journey.Step.Test route expecting 401 - INFO - Executing step: Test route expecting 401
+2025-10-27 18:22:40,527 - Journey.Step.Test route expecting 401 - INFO - Description: test route expecting 401
+2025-10-27 18:22:40,527 - Journey.Step.Test route expecting 401 - INFO - Action 1/1: API GET /status/200
+2025-10-27 18:22:42,275 - Journey.ApiRequestAction - WARNING - API request status mismatch: expected 401, got 200
+2025-10-27 18:22:42,275 - Journey.Step.Test route expecting 401 - ERROR - ✗ Action failed: API GET /status/200
+2025-10-27 18:22:42,275 - Journey.Step.Test route expecting 401 - ERROR -     Details: method=GET, url=https://httpbin.org/status/200, status=200, duration_ms=1748
+2025-10-27 18:22:42,275 - Journey.Step.Test route expecting 401 - ERROR -     Response headers: {'Date': 'Tue, 28 Oct 2025 01:22:42 GMT', 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': '0', 'Connection': 'keep-alive', 'Server': 'gunicorn/19.9.0', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true'}
+2025-10-27 18:22:42,275 - Journey.Step.Test route expecting 401 - ERROR -     Response text: 
+2025-10-27 18:22:42,275 - Journey.test routes - ERROR - ✗ Step failed: Test route expecting 401
+2025-10-27 18:22:43,847 - Journey.test routes - INFO - Journey completed in 3.32 seconds
+2025-10-27 18:22:43,847 - Journey.test routes - INFO - Overall success: False
+2025-10-27 18:22:43,847 - Journey.test routes - INFO - Steps: 0/1 succeeded
+2025-10-27 18:22:43,847 - Journey.test routes - INFO - Actions: 0/1 succeeded
+2025-10-27 18:22:43,847 - Journey.test routes - INFO - 
+============================================================
+2025-10-27 18:22:43,847 - Journey.test routes - INFO - JOURNEY SUMMARY: test routes
+2025-10-27 18:22:43,847 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:22:43,847 - Journey.test routes - WARNING - ✗ UNEXPECTED FAILURE: Journey was expected to succeed but failed in 3.32s
+2025-10-27 18:22:43,847 - Journey.test routes - INFO - Steps: 0/1 succeeded (1 failed)
+2025-10-27 18:22:43,848 - Journey.test routes - INFO - Actions: 0/1 succeeded (1 failed)
+2025-10-27 18:22:43,848 - Journey.test routes - INFO - 
+Step Details:
+2025-10-27 18:22:43,848 - Journey.test routes - INFO -   ✗ Step 1: Test route expecting 401 - FAILURE (unexpected)
+2025-10-27 18:22:43,848 - Journey.test routes - INFO -     Actions: 0/1 succeeded
+2025-10-27 18:22:43,848 - Journey.test routes - ERROR -     ✗ Action failed: API GET /status/200
+2025-10-27 18:22:43,848 - Journey.test routes - ERROR -       Details: method=GET, url=https://httpbin.org/status/200, status=200, duration_ms=1748
+2025-10-27 18:22:43,848 - Journey.test routes - ERROR -       Response headers: {'Date': 'Tue, 28 Oct 2025 01:22:42 GMT', 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': '0', 'Connection': 'keep-alive', 'Server': 'gunicorn/19.9.0', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true'}
+2025-10-27 18:22:43,848 - Journey.test routes - ERROR -       Response text: 
+2025-10-27 18:22:43,848 - Journey.test routes - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-10-27 18:22:43,848 - Journey.test routes - ERROR - 
+✗ TEST FAILED: Journey results differed from expected
+2025-10-27 18:22:43,848 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - STARTING JOURNEY: test routes
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - Description: test routes
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - Target URL: https://httpbin.org
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - Expected Result: SUCCESS
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - Steps: 1
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - Starting journey: test routes
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - Description: test routes
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - Steps: 1
+2025-10-27 18:23:37,345 - Journey.test routes - INFO - Step 1/1: Test route expecting 401
+2025-10-27 18:23:37,345 - Journey.Step.Test route expecting 401 - INFO - Executing step: Test route expecting 401
+2025-10-27 18:23:37,345 - Journey.Step.Test route expecting 401 - INFO - Description: test route expecting 401
+2025-10-27 18:23:37,345 - Journey.Step.Test route expecting 401 - INFO - Action 1/1: API GET /status/200
+2025-10-27 18:23:38,011 - Journey.ApiRequestAction - WARNING - API request status mismatch: expected 401, got 200
+2025-10-27 18:23:38,011 - Journey.Step.Test route expecting 401 - ERROR - ✗ Action failed: API GET /status/200
+2025-10-27 18:23:38,011 - Journey.Step.Test route expecting 401 - ERROR -     Details: method=GET, url=https://httpbin.org/status/200, status=200, duration_ms=665
+2025-10-27 18:23:38,011 - Journey.Step.Test route expecting 401 - ERROR -     Response headers: {'Date': 'Tue, 28 Oct 2025 01:23:37 GMT', 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': '0', 'Connection': 'keep-alive', 'Server': 'gunicorn/19.9.0', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true'}
+2025-10-27 18:23:38,011 - Journey.Step.Test route expecting 401 - ERROR -     Response text: 
+2025-10-27 18:23:38,011 - Journey.test routes - ERROR - ✗ Step failed: Test route expecting 401
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - Journey completed in 1.30 seconds
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - Overall success: False
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - Steps: 0/1 succeeded
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - Actions: 0/1 succeeded
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - 
+============================================================
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - JOURNEY SUMMARY: test routes
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:23:38,641 - Journey.test routes - WARNING - ✗ UNEXPECTED FAILURE: Journey was expected to succeed but failed in 1.30s
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - Steps: 0/1 succeeded (1 failed)
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - Actions: 0/1 succeeded (1 failed)
+2025-10-27 18:23:38,641 - Journey.test routes - INFO - 
+Step Details:
+2025-10-27 18:23:38,641 - Journey.test routes - INFO -   ✗ Step 1: Test route expecting 401 - FAILURE (unexpected)
+2025-10-27 18:23:38,641 - Journey.test routes - INFO -     Actions: 0/1 succeeded
+2025-10-27 18:23:38,641 - Journey.test routes - ERROR -     ✗ Action failed: API GET /status/200
+2025-10-27 18:23:38,641 - Journey.test routes - ERROR -       Details: method=GET, url=https://httpbin.org/status/200, status=200, duration_ms=665
+2025-10-27 18:23:38,642 - Journey.test routes - ERROR -       Response headers: {'Date': 'Tue, 28 Oct 2025 01:23:37 GMT', 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': '0', 'Connection': 'keep-alive', 'Server': 'gunicorn/19.9.0', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true'}
+2025-10-27 18:23:38,642 - Journey.test routes - ERROR -       Response text: 
+2025-10-27 18:23:38,642 - Journey.test routes - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-10-27 18:23:38,642 - Journey.test routes - ERROR - 
+✗ TEST FAILED: Journey results differed from expected
+2025-10-27 18:23:38,642 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:24:43,408 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:24:43,408 - Journey.test routes - INFO - STARTING JOURNEY: test routes
+2025-10-27 18:24:43,409 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:24:43,409 - Journey.test routes - INFO - Description: test routes
+2025-10-27 18:24:43,409 - Journey.test routes - INFO - Target URL: https://httpbin.org
+2025-10-27 18:24:43,409 - Journey.test routes - INFO - Expected Result: SUCCESS
+2025-10-27 18:24:43,409 - Journey.test routes - INFO - Steps: 1
+2025-10-27 18:24:43,409 - Journey.test routes - INFO - Starting journey: test routes
+2025-10-27 18:24:43,409 - Journey.test routes - INFO - Description: test routes
+2025-10-27 18:24:43,409 - Journey.test routes - INFO - Steps: 1
+2025-10-27 18:24:43,409 - Journey.test routes - INFO - Step 1/1: Test route expecting 401
+2025-10-27 18:24:43,409 - Journey.Step.Test route expecting 401 - INFO - Executing step: Test route expecting 401
+2025-10-27 18:24:43,409 - Journey.Step.Test route expecting 401 - INFO - Description: test route expecting 401
+2025-10-27 18:24:43,409 - Journey.Step.Test route expecting 401 - INFO - Action 1/1: API GET /status/200
+2025-10-27 18:24:44,113 - Journey.ApiRequestAction - WARNING - API request status mismatch: expected 401, got 200
+2025-10-27 18:24:44,113 - Journey.Step.Test route expecting 401 - ERROR - ✗ Action failed: API GET /status/200
+2025-10-27 18:24:44,113 - Journey.Step.Test route expecting 401 - ERROR -     Details: method=GET, url=https://httpbin.org/status/200, status=200, duration_ms=703
+2025-10-27 18:24:44,113 - Journey.Step.Test route expecting 401 - ERROR -     Response headers: {'Date': 'Tue, 28 Oct 2025 01:24:44 GMT', 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': '0', 'Connection': 'keep-alive', 'Server': 'gunicorn/19.9.0', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true'}
+2025-10-27 18:24:44,113 - Journey.Step.Test route expecting 401 - ERROR -     Response text: 
+2025-10-27 18:24:44,113 - Journey.test routes - ERROR - ✗ Step failed: Test route expecting 401
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - Journey completed in 1.15 seconds
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - Overall success: False
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - Steps: 0/1 succeeded
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - Actions: 0/1 succeeded
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - 
+============================================================
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - JOURNEY SUMMARY: test routes
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - ============================================================
+2025-10-27 18:24:44,561 - Journey.test routes - WARNING - ✗ UNEXPECTED FAILURE: Journey was expected to succeed but failed in 1.15s
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - Steps: 0/1 succeeded (1 failed)
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - Actions: 0/1 succeeded (1 failed)
+2025-10-27 18:24:44,561 - Journey.test routes - INFO - 
+Step Details:
+2025-10-27 18:24:44,562 - Journey.test routes - INFO -   ✗ Step 1: Test route expecting 401 - FAILURE (unexpected)
+2025-10-27 18:24:44,562 - Journey.test routes - INFO -     Actions: 0/1 succeeded
+2025-10-27 18:24:44,562 - Journey.test routes - ERROR -     ✗ Action failed: API GET /status/200
+2025-10-27 18:24:44,562 - Journey.test routes - ERROR -       Details: method=GET, url=https://httpbin.org/status/200, status=200, duration_ms=703
+2025-10-27 18:24:44,562 - Journey.test routes - ERROR -       Response headers: {'Date': 'Tue, 28 Oct 2025 01:24:44 GMT', 'Content-Type': 'text/html; charset=utf-8', 'Content-Length': '0', 'Connection': 'keep-alive', 'Server': 'gunicorn/19.9.0', 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Credentials': 'true'}
+2025-10-27 18:24:44,562 - Journey.test routes - ERROR -       Response text: 
+2025-10-27 18:24:44,562 - Journey.test routes - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-10-27 18:24:44,562 - Journey.test routes - ERROR - 
+✗ TEST FAILED: Journey results differed from expected
+2025-10-27 18:24:44,562 - Journey.test routes - INFO - ============================================================

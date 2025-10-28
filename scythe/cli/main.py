@@ -68,11 +68,11 @@ def check_version_in_response_header(args) -> bool:
 def scythe_test_definition(args) -> bool:
     # TODO: implement your test using Scythe primitives.
     # Example placeholder that simply passes.
-    
+
     # Example usage with TTPExecutor:
     # from scythe.core.executor import TTPExecutor
     # from scythe.ttps.web.login_bruteforce import LoginBruteforceTTP
-    # 
+    #
     # ttp = LoginBruteforceTTP(
     #     payloads=['admin', 'root', 'test'],
     #     expected_result=False  # Expect security controls to block attempts
@@ -80,12 +80,12 @@ def scythe_test_definition(args) -> bool:
     # executor = TTPExecutor(ttp=ttp, target_url=args.url)
     # executor.run()
     # return executor.was_successful()  # Returns True if all results matched expectations
-    
+
     # Example usage with JourneyExecutor:
     # from scythe.journeys.executor import JourneyExecutor
     # from scythe.journeys.base import Journey, Step
     # from scythe.journeys.actions import NavigateAction, FillFormAction, ClickAction
-    # 
+    #
     # journey = Journey(
     #     name="Login Journey",
     #     description="Test user login flow",
@@ -95,19 +95,19 @@ def scythe_test_definition(args) -> bool:
     # executor = JourneyExecutor(journey=journey, target_url=args.url)
     # executor.run()
     # return executor.was_successful()  # Returns True if journey succeeded as expected
-    
+
     # Example usage with Orchestrators:
     # from scythe.orchestrators.scale import ScaleOrchestrator
     # from scythe.orchestrators.base import OrchestrationStrategy
-    # 
+    #
     # orchestrator = ScaleOrchestrator(
     #     strategy=OrchestrationStrategy.PARALLEL,
     #     max_workers=10
     # )
     # result = orchestrator.orchestrate_ttp(ttp=my_ttp, target_url=args.url, replications=100)
     # return orchestrator.exit_code(result) == 0  # Returns True if all executions succeeded
-    
-    return True
+
+    return executor.exit_code() # assumes executor var
 
 
 def main():
@@ -259,14 +259,14 @@ def main():
     if check_url_available(args.url):
         if args.gate_versions:
             if check_version_in_response_header(args):
-                ok = scythe_test_definition(args)
-                sys.exit(0 if ok else 1)
+                exit_code = scythe_test_definition(args)
+                sys.exit(exit_code)
             else:
                 print("No compatible version found in response header.")
                 sys.exit(1)
         else:
-            ok = scythe_test_definition(args)
-            sys.exit(0 if ok else 1)
+            exit_code = scythe_test_definition(args)
+            sys.exit(exit_code)
     else:
         print("URL not available.")
         sys.exit(1)
@@ -278,6 +278,13 @@ if __name__ == "__main__":
 
 class ScytheCLIError(Exception):
     pass
+
+
+class ExitWithCode(Exception):
+    """Exception to exit with a specific code from within Typer commands."""
+    def __init__(self, code: int):
+        self.code = code
+        super().__init__()
 
 
 def _find_project_root(start: Optional[str] = None) -> Optional[str]:
@@ -728,7 +735,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         code, output, version = _run_test(project_root, name, extra)
         _record_run(project_root, name, code, output, version)
         print(output)
-        return code
+        # Raise exception to propagate exit code through Typer
+        if code != 0:
+            raise ExitWithCode(code)
+        return 0
 
     db_app = typer.Typer(
         no_args_is_help=True,
@@ -763,8 +773,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     app.add_typer(db_app, name="db")
 
     try:
-        rv = app()
-        return int(rv) if isinstance(rv, int) else 0
+        app()
+        return 0
+    except ExitWithCode as e:
+        return e.code
     except ScytheCLIError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 2
