@@ -281,6 +281,24 @@ class Orchestrator(ABC):
                 self.logger.warning(f"  ... and {len(result.errors) - 3} more errors")
         
         self.logger.info("="*60)
+    
+    def exit_code(self, result: OrchestrationResult) -> int:
+        """
+        Get the exit code for an orchestration result.
+        
+        An orchestration is considered successful if all executions completed
+        successfully (matching their expected results).
+        
+        Args:
+            result: OrchestrationResult to evaluate
+            
+        Returns:
+            0 if all executions were successful, 1 otherwise
+        """
+        # Check if any executions failed or if there were errors
+        if result.failed_executions > 0 or len(result.errors) > 0:
+            return 1
+        return 0
 
 
 class ExecutionContext:

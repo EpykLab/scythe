@@ -463,6 +463,15 @@ class JourneyExecutor:
         actual = self.execution_results.get('overall_success', False)
         expected = self.execution_results.get('expected_result', True)
         return actual == expected
+    
+    def exit_code(self) -> int:
+        """
+        Get the exit code for this journey execution.
+        
+        Returns:
+            0 if journey was successful (results matched expectations), 1 otherwise
+        """
+        return 0 if self.was_successful() else 1
 
 
 class JourneyRunner:

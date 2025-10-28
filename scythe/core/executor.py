@@ -344,3 +344,12 @@ class TTPExecutor:
             True if all test results matched expectations, False otherwise
         """
         return not self.has_test_failures
+    
+    def exit_code(self) -> int:
+        """
+        Get the exit code for this test execution.
+        
+        Returns:
+            0 if test was successful (results matched expectations), 1 otherwise
+        """
+        return 0 if self.was_successful() else 1

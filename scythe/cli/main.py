@@ -71,15 +71,41 @@ def scythe_test_definition(args) -> bool:
     
     # Example usage with TTPExecutor:
     # from scythe.core.executor import TTPExecutor
-    # executor = TTPExecutor(ttp=my_ttp, target_url=args.url)
+    # from scythe.ttps.web.login_bruteforce import LoginBruteforceTTP
+    # 
+    # ttp = LoginBruteforceTTP(
+    #     payloads=['admin', 'root', 'test'],
+    #     expected_result=False  # Expect security controls to block attempts
+    # )
+    # executor = TTPExecutor(ttp=ttp, target_url=args.url)
     # executor.run()
     # return executor.was_successful()  # Returns True if all results matched expectations
     
     # Example usage with JourneyExecutor:
     # from scythe.journeys.executor import JourneyExecutor
-    # executor = JourneyExecutor(journey=my_journey, target_url=args.url)
+    # from scythe.journeys.base import Journey, Step
+    # from scythe.journeys.actions import NavigateAction, FillFormAction, ClickAction
+    # 
+    # journey = Journey(
+    #     name="Login Journey",
+    #     description="Test user login flow",
+    #     expected_result=True  # Expect journey to succeed
+    # )
+    # journey.add_step(Step("Navigate").add_action(NavigateAction(url=args.url)))
+    # executor = JourneyExecutor(journey=journey, target_url=args.url)
     # executor.run()
     # return executor.was_successful()  # Returns True if journey succeeded as expected
+    
+    # Example usage with Orchestrators:
+    # from scythe.orchestrators.scale import ScaleOrchestrator
+    # from scythe.orchestrators.base import OrchestrationStrategy
+    # 
+    # orchestrator = ScaleOrchestrator(
+    #     strategy=OrchestrationStrategy.PARALLEL,
+    #     max_workers=10
+    # )
+    # result = orchestrator.orchestrate_ttp(ttp=my_ttp, target_url=args.url, replications=100)
+    # return orchestrator.exit_code(result) == 0  # Returns True if all executions succeeded
     
     return True
 
