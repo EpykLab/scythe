@@ -184,6 +184,94 @@ def custom_success_indicators_example():
     print("Custom indicators help detect various defensive mechanisms")
 
 
+def payload_iteration_examples():
+    """
+    Examples of using different payload data types with RequestFloodingTTP.
+    """
+    print("\n=== Payload Iteration Examples ===")
+
+    # Example 1: List of different payloads
+    print("\n1. Using a list of different payloads:")
+    payload_list = [
+        {'user_id': 1, 'action': 'search', 'query': 'test1'},
+        {'user_id': 2, 'action': 'search', 'query': 'test2'},
+        {'user_id': 3, 'action': 'search', 'query': 'test3'},
+    ]
+
+    ttp1 = RequestFloodingTTP(
+        target_endpoints=['/api/search'],
+        request_count=6,  # Will cycle through the 3 payloads twice
+        requests_per_second=5.0,
+        attack_pattern='volume',
+        payload_data=payload_list,  # List of dicts
+        execution_mode='api',
+        http_method='POST',
+        expected_result=False
+    )
+
+    print("   Cycling through different user searches to test rate limiting")
+    print(f"   {len(payload_list)} unique payloads will be cycled for {ttp1.request_count} requests")
+
+    # Example 2: Using PayloadGenerator
+    print("\n2. Using a PayloadGenerator:")
+    from scythe.payloads.generators import StaticPayloadGenerator
+
+    search_payloads = StaticPayloadGenerator([
+        {'query': 'expensive search 1', 'limit': 10000},
+        {'query': 'expensive search 2', 'limit': 10000},
+        {'query': 'expensive search 3', 'limit': 10000},
+    ])
+
+    ttp2 = RequestFloodingTTP(
+        target_endpoints=['/api/search'],
+        request_count=3,
+        attack_pattern='resource_exhaustion',
+        payload_data=search_payloads,  # PayloadGenerator
+        execution_mode='api',
+        http_method='POST',
+        expected_result=False
+    )
+
+    print("   Using PayloadGenerator for different expensive searches")
+
+    # Example 3: Custom payload generator for dynamic data
+    print("\n3. Using a custom generator for dynamic payloads:")
+    from scythe.payloads.generators import PayloadGenerator
+    import random
+
+    class DynamicSearchGenerator(PayloadGenerator):
+        """Generate dynamic search queries."""
+        def __init__(self, count):
+            self.count = count
+
+        def __iter__(self):
+            for i in range(self.count):
+                yield {
+                    'query': f'search_term_{i}',
+                    'limit': random.randint(100, 1000),
+                    'timestamp': f'2024-01-{(i % 31) + 1:02d}'
+                }
+
+    dynamic_gen = DynamicSearchGenerator(count=5)
+
+    ttp3 = RequestFloodingTTP(
+        target_endpoints=['/api/search'],
+        request_count=5,
+        payload_data=dynamic_gen,  # Custom generator
+        execution_mode='api',
+        http_method='POST',
+        expected_result=False
+    )
+
+    print("   Custom generator creates dynamic payloads for each request")
+
+    print("\n   Use cases for payload iteration:")
+    print("   - Testing rate limiting with different user accounts")
+    print("   - Varying query parameters to bypass simple filtering")
+    print("   - Simulating realistic traffic patterns")
+    print("   - Testing how application handles diverse request payloads")
+
+
 def analyze_attack_results():
     """
     Example of how to analyze attack results for detailed insights.
@@ -233,7 +321,7 @@ def main():
     """
     print("RequestFloodingTTP Usage Examples")
     print("=" * 50)
-    
+
     try:
         basic_api_flooding_example()
         burst_attack_example()
@@ -242,8 +330,9 @@ def main():
         ui_mode_flooding_example()
         authenticated_flooding_example()
         custom_success_indicators_example()
+        payload_iteration_examples()
         analyze_attack_results()
-        
+
         print("\n" + "=" * 50)
         print("✅ All examples completed successfully!")
         print("\nTo actually run these tests against a target:")
@@ -251,7 +340,7 @@ def main():
         print("2. Set up appropriate authentication if needed")
         print("3. Uncomment the executor.execute() calls")
         print("4. Run with appropriate rate limiting to avoid overwhelming targets")
-        
+
     except Exception as e:
         print(f"\n❌ Example failed: {e}")
         import traceback

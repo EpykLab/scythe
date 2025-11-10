@@ -1,7 +1,7 @@
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from typing import Dict, Any, Optional, List, Generator
+from typing import Dict, Any, Optional, List, Generator, Union
 import requests
 import time
 import threading
@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import random
 
 from ...core.ttp import TTP
+from ...payloads.generators import PayloadGenerator
 
 
 class RequestFloodingTTP(TTP):
@@ -35,7 +36,7 @@ class RequestFloodingTTP(TTP):
                  requests_per_second: float = 10.0,
                  attack_pattern: str = 'volume',
                  concurrent_threads: int = 5,
-                 payload_data: Optional[Dict[str, Any]] = None,
+                 payload_data: Optional[Union[Dict[str, Any], PayloadGenerator, List[Dict[str, Any]]]] = None,
                  http_method: str = 'GET',
                  form_selector: str = None,
                  submit_selector: str = None,
@@ -54,7 +55,11 @@ class RequestFloodingTTP(TTP):
             requests_per_second: Target rate of requests (used for timing calculations)
             attack_pattern: Type of attack - 'volume', 'slowloris', 'burst', 'resource_exhaustion'
             concurrent_threads: Number of concurrent threads to use for requests
-            payload_data: Data to send in request body (API mode) or form fields (UI mode)
+            payload_data: Data to send in request body (API mode) or form fields (UI mode).
+                         Can be:
+                         - A single dict (used for all requests)
+                         - A PayloadGenerator that yields dicts
+                         - A list of dicts (will cycle through them)
             http_method: HTTP method to use ('GET', 'POST', 'PUT', 'DELETE')
             form_selector: CSS selector for form to repeatedly submit (UI mode)
             submit_selector: CSS selector for submit button (UI mode)
@@ -79,7 +84,11 @@ class RequestFloodingTTP(TTP):
         self.requests_per_second = requests_per_second
         self.attack_pattern = attack_pattern.lower()
         self.concurrent_threads = min(concurrent_threads, 20)  # Cap to prevent system overload
-        self.payload_data = payload_data or {}
+
+        # Handle different payload_data types
+        self.payload_data = payload_data
+        self._payload_data_type = self._determine_payload_data_type(payload_data)
+
         self.http_method = http_method.upper()
         
         # UI mode configuration
@@ -116,23 +125,88 @@ class RequestFloodingTTP(TTP):
             'attack_effectiveness': 0.0
         }
 
+    def _determine_payload_data_type(self, payload_data) -> str:
+        """Determine the type of payload_data provided."""
+        if payload_data is None:
+            return 'none'
+        elif isinstance(payload_data, PayloadGenerator):
+            return 'generator'
+        elif isinstance(payload_data, list):
+            return 'list'
+        elif isinstance(payload_data, dict):
+            return 'dict'
+        else:
+            # Check if it's iterable (could be a custom generator)
+            try:
+                iter(payload_data)
+                return 'iterable'
+            except TypeError:
+                return 'dict'  # Fallback to treating as single dict
+
+    def _get_payload_data_iterator(self):
+        """
+        Create an iterator for payload data based on its type.
+        Yields data dicts that will be cycled through for each request.
+        """
+        if self._payload_data_type == 'none':
+            # Yield empty dict indefinitely
+            while True:
+                yield {}
+        elif self._payload_data_type == 'generator':
+            # Use the PayloadGenerator
+            yield from self.payload_data()
+        elif self._payload_data_type == 'list':
+            # Cycle through the list
+            if not self.payload_data:
+                while True:
+                    yield {}
+            else:
+                i = 0
+                while True:
+                    yield self.payload_data[i % len(self.payload_data)]
+                    i += 1
+        elif self._payload_data_type == 'iterable':
+            # Use the iterable and cycle through it
+            payload_list = list(self.payload_data)
+            if not payload_list:
+                while True:
+                    yield {}
+            else:
+                i = 0
+                while True:
+                    yield payload_list[i % len(payload_list)]
+                    i += 1
+        else:  # 'dict'
+            # Use the same dict for all requests
+            while True:
+                yield self.payload_data.copy() if isinstance(self.payload_data, dict) else {}
+
     def get_payloads(self) -> Generator[Dict[str, Any], None, None]:
         """
         Generates attack payloads based on the configured attack pattern.
         Each payload contains timing and configuration data for the attack.
         """
         base_delay = 1.0 / self.requests_per_second if self.requests_per_second > 0 else 0.1
-        
+
+        # Create iterator for payload data
+        payload_data_iter = self._get_payload_data_iterator()
+
         for i in range(self.request_count):
+            # Get the next payload data from the iterator
+            data = next(payload_data_iter)
+            # Ensure data is a dict
+            if not isinstance(data, dict):
+                data = {}
+
             payload = {
                 'request_id': i,
                 'endpoint': self.target_endpoints[i % len(self.target_endpoints)],
-                'data': self.payload_data.copy(),
+                'data': data.copy(),
                 'user_agent': random.choice(self.user_agents),
                 'delay': self._calculate_delay(i, base_delay),
                 'timeout': self._calculate_timeout(i)
             }
-            
+
             # Add attack-pattern specific modifications
             if self.attack_pattern == 'burst':
                 # Create bursts every 10 requests
@@ -140,19 +214,19 @@ class RequestFloodingTTP(TTP):
                     payload['delay'] = 0.05  # Very fast burst
                 else:
                     payload['delay'] = base_delay * 3  # Slower between bursts
-                    
+
             elif self.attack_pattern == 'slowloris':
                 payload['timeout'] = 60.0  # Very long timeout
                 payload['delay'] = base_delay * 2  # Slower rate but longer connections
-                
+
             elif self.attack_pattern == 'resource_exhaustion':
-                # Add resource-intensive parameters
+                # Add resource-intensive parameters to existing data
                 payload['data'].update({
                     'limit': 10000,  # Request large datasets
                     'search': '*',   # Broad search terms
                     'recursive': True
                 })
-            
+
             yield payload
 
     def _calculate_delay(self, request_index: int, base_delay: float) -> float:
