@@ -753,7 +753,8 @@ class ApiRequestAction(Action):
                  expected_result: bool = True,
                  response_model: Optional[Any] = None,
                  response_model_context_key: Optional[str] = None,
-                 fail_on_validation_error: bool = False):
+                 fail_on_validation_error: bool = False,
+                 honor_rate_limit: bool = True):
         self.method = method.upper()
         self.url = url
         self.flush = flush
@@ -766,6 +767,7 @@ class ApiRequestAction(Action):
         self.response_model = response_model
         self.response_model_context_key = response_model_context_key
         self.fail_on_validation_error = fail_on_validation_error
+        self.honor_rate_limit = honor_rate_limit
         name = name or f"API {self.method} {url}"
         description = description or f"Perform {self.method} request to {url}"
         super().__init__(name, description, expected_result)
@@ -822,21 +824,22 @@ class ApiRequestAction(Action):
         self.store_result('request_headers', _mask_headers(final_headers))
 
         logger = logging.getLogger("Journey.ApiRequestAction")
-        # Honor any pending rate-limit resume time set by previous actions/steps
-        try:
-            resume_at = context.get('rate_limit_resume_at')
-            now = time.time()
-            if isinstance(resume_at, (int, float)) and resume_at > now:
-                wait_s = min(resume_at - now, 30)
-                if wait_s > 0:
-                    self.store_result('waited_ms_before_request', int(wait_s * 1000))
-                    try:
-                        logger.info(f"Delaying {wait_s:.2f}s due to prior rate limit (resume_at)")
-                    except Exception:
-                        pass
-                    time.sleep(wait_s)
-        except Exception:
-            pass
+        # Honor any pending rate-limit resume time set by previous actions/steps (if enabled)
+        if self.honor_rate_limit:
+            try:
+                resume_at = context.get('rate_limit_resume_at')
+                now = time.time()
+                if isinstance(resume_at, (int, float)) and resume_at > now:
+                    wait_s = min(resume_at - now, 30)
+                    if wait_s > 0:
+                        self.store_result('waited_ms_before_request', int(wait_s * 1000))
+                        try:
+                            logger.info(f"Delaying {wait_s:.2f}s due to prior rate limit (resume_at)")
+                        except Exception:
+                            pass
+                        time.sleep(wait_s)
+            except Exception:
+                pass
 
         def _h(headers: Dict[str, Any], name: str):
             lname = (name or '').lower()
@@ -875,45 +878,59 @@ class ApiRequestAction(Action):
                 context['last_response_headers'] = response_headers
                 context['last_response_url'] = resolved_url
 
-                # Parse rate-limit headers
-                try:
-                    # Normalize numeric values
-                    remaining = _h(response_headers, 'X-RateLimit-Remaining')
-                    if remaining is None:
-                        remaining = _h(response_headers, 'X-Ratelimit-Remaining')
-                    reset = _h(response_headers, 'X-RateLimit-Reset')
-                    if reset is None:
-                        reset = _h(response_headers, 'X-Ratelimit-Reset')
-                    retry_after = _h(response_headers, 'Retry-After')
+                # Parse rate-limit headers (if honor_rate_limit is enabled)
+                if self.honor_rate_limit:
+                    try:
+                        # Normalize numeric values
+                        remaining = _h(response_headers, 'X-RateLimit-Remaining')
+                        if remaining is None:
+                            remaining = _h(response_headers, 'X-Ratelimit-Remaining')
+                        reset = _h(response_headers, 'X-RateLimit-Reset')
+                        if reset is None:
+                            reset = _h(response_headers, 'X-Ratelimit-Reset')
+                        retry_after = _h(response_headers, 'Retry-After')
 
-                    # If explicit Retry-After or 429, set resume time and optionally retry
-                    if status_code == 429:
-                        wait_s = 0
-                        try:
-                            wait_s = int(str(retry_after).strip()) if retry_after is not None else 1
-                        except Exception:
-                            wait_s = 1
-                        wait_s = max(1, min(wait_s, 30))
-                        context['rate_limit_resume_at'] = time.time() + wait_s
-                        self.store_result('rate_limit_wait_s', wait_s)
-                        if attempt == 0 and self.method in {'GET', 'HEAD', 'OPTIONS'}:
+                        # If explicit Retry-After or 429, set resume time and optionally retry
+                        if status_code == 429:
+                            wait_s = 0
                             try:
-                                logger.info(f"Hit 429 Too Many Requests; backing off {wait_s}s and retrying once")
+                                wait_s = int(str(retry_after).strip()) if retry_after is not None else 1
+                            except Exception:
+                                wait_s = 1
+                            wait_s = max(1, min(wait_s, 30))
+                            context['rate_limit_resume_at'] = time.time() + wait_s
+                            self.store_result('rate_limit_wait_s', wait_s)
+                            if attempt == 0 and self.method in {'GET', 'HEAD', 'OPTIONS'}:
+                                try:
+                                    logger.info(f"Hit 429 Too Many Requests; backing off {wait_s}s and retrying once")
+                                except Exception:
+                                    pass
+                                time.sleep(wait_s)
+                                continue  # retry once
+                        else:
+                            # If remaining == 0, set resume time based on reset header or sensible default
+                            try:
+                                if remaining is not None and str(remaining).strip() == '0':
+                                    wait_s2 = 0
+                                    if reset is not None:
+                                        # Use the reset value if provided
+                                        try:
+                                            wait_s2 = int(str(reset).strip())
+                                        except Exception:
+                                            wait_s2 = 5  # Default to 5s if reset can't be parsed
+                                    else:
+                                        # No reset header provided, use sensible default (5 seconds)
+                                        wait_s2 = 5
+                                        try:
+                                            logger.info("X-RateLimit-Remaining is 0 but X-RateLimit-Reset not provided; using 5s default")
+                                        except Exception:
+                                            pass
+                                    if wait_s2 > 0:
+                                        context['rate_limit_resume_at'] = time.time() + min(wait_s2, 30)
                             except Exception:
                                 pass
-                            time.sleep(wait_s)
-                            continue  # retry once
-                    else:
-                        # If remaining == 0 and reset provided, set resume time
-                        try:
-                            if remaining is not None and str(remaining).strip() == '0' and reset is not None:
-                                wait_s2 = int(str(reset).strip())
-                                if wait_s2 > 0:
-                                    context['rate_limit_resume_at'] = time.time() + min(wait_s2, 30)
-                        except Exception:
-                            pass
-                except Exception:
-                    pass
+                    except Exception:
+                        pass
 
                 # Try JSON, fallback to text
                 parsed_model = None
