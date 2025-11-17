@@ -310,3 +310,131 @@ class URLManipulation(TTP):
             return any(indicator in response_text for indicator in sql_indicators)
         except Exception:
             return False
+
+
+class URLPathManipulation(TTP):
+    """
+    SQL Injection TTP that tests URL query parameters for SQL injection vulnerabilities.
+    
+    Supports two execution modes:
+    - UI mode: Navigates to URLs with SQL payloads in query parameters
+    - API mode: Sends GET requests with SQL payloads in query parameters
+    """
+    def __init__(self,
+                 payload_generator: PayloadGenerator,
+                 target_url: str = None,
+                 expected_result: bool = True,
+                 authentication=None,
+                 execution_mode: str = 'ui',
+                 api_endpoint: Optional[str] = None,
+                 param: str = None):
+        """
+        Initialize the URL Manipulation SQL Injection TTP.
+        
+        Args:
+            payload_generator: Generator that yields SQL injection payloads
+            target_url: Target URL (UI mode)
+            expected_result: Whether we expect to find SQL injection vulnerabilities
+            authentication: Optional authentication
+            execution_mode: 'ui' or 'api'
+            api_endpoint: API endpoint path (API mode, e.g., '/api/search/:something:')
+            param: parameter name to inject into
+        """
+        super().__init__(
+            name="SQL Injection via URL manipulation", 
+            description="Simulate SQL injection by manipulating URL query parameters",
+            expected_result=expected_result,
+            authentication=authentication,
+            execution_mode=execution_mode)
+        self.target_url = target_url
+        self.payload_generator = payload_generator
+        self.api_endpoint = api_endpoint
+        self.param = param
+
+    def get_payloads(self):
+        yield from self.payload_generator()
+
+    def execute_step(self, driver: WebDriver, payload: str):
+        """Execute SQL injection via URL manipulation in UI mode."""
+        uri = self.api_endpoint.replace(self.param, payload)
+        driver.get(f"{self.target_url}{uri}")
+
+    def verify_result(self, driver: WebDriver) -> bool:
+        """Check for SQL error indicators in UI mode."""
+        return "sql" in driver.page_source.lower() or \
+               "source" in driver.page_source.lower()
+    
+    def execute_step_api(self, session: requests.Session, payload: str, context: Dict[str, Any]) -> requests.Response:
+        """
+        Executes a SQL injection attempt via API request with query parameters.
+        
+        Args:
+            session: requests.Session for making HTTP requests
+            payload: The SQL injection payload to test
+            context: Shared context dictionary
+            
+        Returns:
+            requests.Response from the injection attempt
+        """
+        from urllib.parse import urljoin
+        
+        # Build the full URL
+        base_url = context.get('target_url', '')
+        if not base_url:
+            raise ValueError("target_url must be set in context for API mode")
+        
+
+        uri = self.api_endpoint.replace(self.param, payload)
+        url = urljoin(base_url, uri or self.target_url or '/')
+        
+        # Merge auth headers from context
+        headers = {}
+        auth_headers = context.get('auth_headers', {})
+        if auth_headers:
+            headers.update(auth_headers)
+        
+        # Honor rate limiting
+        import time
+        resume_at = context.get('rate_limit_resume_at')
+        now = time.time()
+        if isinstance(resume_at, (int, float)) and resume_at > now:
+            wait_s = min(resume_at - now, 30)
+            if wait_s > 0:
+                time.sleep(wait_s)
+        
+        # Make GET request with payload in query param
+        response = session.get(url, headers=headers or None, timeout=10.0)
+        
+        # Handle rate limiting
+        if response.status_code == 429:
+            retry_after = response.headers.get('Retry-After', '1')
+            try:
+                wait_s = int(retry_after)
+            except (ValueError, TypeError):
+                wait_s = 1
+            context['rate_limit_resume_at'] = time.time() + min(wait_s, 30)
+        
+        return response
+    
+    def verify_result_api(self, response: requests.Response, context: Dict[str, Any]) -> bool:
+        """
+        Verifies if the SQL injection attempt triggered a vulnerability.
+        
+        Args:
+            response: The response from execute_step_api
+            context: Shared context dictionary
+            
+        Returns:
+            True if SQL error indicators found, False otherwise
+        """
+        try:
+            response_text = response.text.lower()
+            # Common SQL error indicators
+            sql_indicators = [
+                'sql', 'syntax', 'mysql', 'sqlite', 'postgresql', 'oracle',
+                'odbc', 'jdbc', 'driver', 'database', 'query', 'syntax error',
+                'unterminated', 'unexpected', 'warning: mysql'
+            ]
+            return any(indicator in response_text for indicator in sql_indicators)
+        except Exception:
+            return False
