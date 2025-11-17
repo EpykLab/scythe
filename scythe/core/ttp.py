@@ -4,6 +4,7 @@ from selenium.webdriver.remote.webdriver import WebDriver
 
 if TYPE_CHECKING:
     from ..auth.base import Authentication
+    from .csrf import CSRFProtection
     import requests
 
 class TTP(ABC):
@@ -18,11 +19,12 @@ class TTP(ABC):
     - 'api': Uses requests library to interact directly with backend APIs
     """
 
-    def __init__(self, name: str, description: str, expected_result: bool = True, 
-                 authentication: Optional['Authentication'] = None, execution_mode: str = 'ui'):
+    def __init__(self, name: str, description: str, expected_result: bool = True,
+                 authentication: Optional['Authentication'] = None, execution_mode: str = 'ui',
+                 csrf_protection: Optional['CSRFProtection'] = None):
         """
         Initialize a TTP.
-        
+
         Args:
             name: Name of the TTP
             description: Description of what the TTP does
@@ -31,12 +33,14 @@ class TTP(ABC):
                            False means we expect the security controls to prevent success.
             authentication: Optional authentication mechanism to use before executing TTP
             execution_mode: Execution mode - 'ui' for Selenium-based UI testing or 'api' for direct API testing
+            csrf_protection: Optional CSRF protection configuration for API mode
         """
         self.name = name
         self.description = description
         self.expected_result = expected_result
         self.authentication = authentication
         self.execution_mode = execution_mode.lower()
+        self.csrf_protection = csrf_protection
 
     @abstractmethod
     def get_payloads(self) -> Generator[Any, None, None]:

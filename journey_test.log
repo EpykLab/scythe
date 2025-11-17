@@ -2679,3 +2679,149 @@ No X-SCYTHE-TARGET-VERSION headers detected in responses.
 2025-10-27 18:24:44,562 - Journey.test routes - ERROR - 
 ✗ TEST FAILED: Journey results differed from expected
 2025-10-27 18:24:44,562 - Journey.test routes - INFO - ============================================================
+2025-11-17 08:23:45,742 - Journey.ApiRequestAction - INFO - Hit 403 (possible CSRF failure); attempting to refresh token and retry
+2025-11-17 08:23:45,742 - scythe.core.csrf - WARNING - Possible CSRF failure detected (status 403), attempting to refresh token
+2025-11-17 08:23:45,742 - scythe.core.csrf - INFO - Successfully refreshed CSRF token
+2025-11-17 08:23:45,742 - Journey.ApiRequestAction - INFO - Successfully refreshed CSRF token; retrying request
+2025-11-17 08:23:45,746 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:23:45,746 - Journey.Test Journey - INFO - STARTING JOURNEY: Test Journey
+2025-11-17 08:23:45,746 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:23:45,746 - Journey.Test Journey - INFO - Description: Test with CSRF
+2025-11-17 08:23:45,746 - Journey.Test Journey - INFO - Target URL: https://example.com
+2025-11-17 08:23:45,746 - Journey.Test Journey - INFO - Expected Result: SUCCESS
+2025-11-17 08:23:45,746 - Journey.Test Journey - INFO - Steps: 0
+2025-11-17 08:23:45,747 - Journey.Test Journey - INFO - CSRF protection enabled: CSRFProtection(extract_from='cookie', cookie_name='csrftoken', header_name='X-CSRF-Token')
+2025-11-17 08:23:45,747 - Journey.Test Journey - INFO - 
+============================================================
+2025-11-17 08:23:45,747 - Journey.Test Journey - INFO - JOURNEY SUMMARY: Test Journey
+2025-11-17 08:23:45,747 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:23:45,747 - Journey.Test Journey - WARNING - ✗ UNEXPECTED FAILURE: Journey was expected to succeed but failed in 0.00s
+2025-11-17 08:23:45,747 - Journey.Test Journey - INFO - Steps: 0/0 succeeded (0 failed)
+2025-11-17 08:23:45,747 - Journey.Test Journey - INFO - Actions: 0/0 succeeded (0 failed)
+2025-11-17 08:23:45,747 - Journey.Test Journey - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-11-17 08:23:45,747 - Journey.Test Journey - ERROR - 
+✗ TEST FAILED: Journey results differed from expected
+2025-11-17 08:23:45,747 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:24:09,467 - Journey.ApiRequestAction - INFO - Hit 403 (possible CSRF failure); attempting to refresh token and retry
+2025-11-17 08:24:09,467 - scythe.core.csrf - WARNING - Possible CSRF failure detected (status 403), attempting to refresh token
+2025-11-17 08:24:09,468 - scythe.core.csrf - INFO - Successfully refreshed CSRF token
+2025-11-17 08:24:09,468 - Journey.ApiRequestAction - INFO - Successfully refreshed CSRF token; retrying request
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - STARTING JOURNEY: Test Journey
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - Description: Test with CSRF
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - Target URL: https://example.com
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - Expected Result: SUCCESS
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - Steps: 0
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - CSRF protection enabled: CSRFProtection(extract_from='cookie', cookie_name='csrftoken', header_name='X-CSRF-Token')
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - 
+============================================================
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - JOURNEY SUMMARY: Test Journey
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:24:09,472 - Journey.Test Journey - WARNING - ✗ UNEXPECTED FAILURE: Journey was expected to succeed but failed in 0.00s
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - Steps: 0/0 succeeded (0 failed)
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - Actions: 0/0 succeeded (0 failed)
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-11-17 08:24:09,472 - Journey.Test Journey - ERROR - 
+✗ TEST FAILED: Journey results differed from expected
+2025-11-17 08:24:09,472 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:24:40,075 - Journey.ApiRequestAction - INFO - Hit 403 (possible CSRF failure); attempting to refresh token and retry
+2025-11-17 08:24:40,075 - scythe.core.csrf - WARNING - Possible CSRF failure detected (status 403), attempting to refresh token
+2025-11-17 08:24:40,075 - scythe.core.csrf - INFO - Successfully refreshed CSRF token
+2025-11-17 08:24:40,075 - Journey.ApiRequestAction - INFO - Successfully refreshed CSRF token; retrying request
+2025-11-17 08:24:40,080 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:24:40,080 - Journey.Test Journey - INFO - STARTING JOURNEY: Test Journey
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - Description: Test with CSRF
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - Target URL: https://example.com
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - Expected Result: SUCCESS
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - Steps: 0
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - CSRF protection enabled: CSRFProtection(extract_from='cookie', cookie_name='csrftoken', header_name='X-CSRF-Token')
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - 
+============================================================
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - JOURNEY SUMMARY: Test Journey
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:24:40,081 - Journey.Test Journey - WARNING - ✗ UNEXPECTED FAILURE: Journey was expected to succeed but failed in 0.00s
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - Steps: 0/0 succeeded (0 failed)
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - Actions: 0/0 succeeded (0 failed)
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-11-17 08:24:40,081 - Journey.Test Journey - ERROR - 
+✗ TEST FAILED: Journey results differed from expected
+2025-11-17 08:24:40,081 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:25:34,672 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-11-17 08:25:34,673 - Journey.Test Journey - INFO - Description: Test Description
+2025-11-17 08:25:34,673 - Journey.Test Journey - INFO - Steps: 1
+2025-11-17 08:25:34,673 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-11-17 08:25:34,673 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-11-17 08:25:34,673 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-11-17 08:25:34,673 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-11-17 08:25:34,673 - Journey.Step.Test Step - ERROR - ✗ Action failed: Test Action
+2025-11-17 08:25:34,673 - Journey.Test Journey - ERROR - ✗ Step failed: Test Step
+2025-11-17 08:25:35,227 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2025-11-17 08:25:35,228 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-11-17 08:25:35,228 - Journey.Test Journey - INFO - Journey completed in 0.55 seconds
+2025-11-17 08:25:35,228 - Journey.Test Journey - INFO - Overall success: False
+2025-11-17 08:25:35,228 - Journey.Test Journey - INFO - Steps: 0/1 succeeded
+2025-11-17 08:25:35,228 - Journey.Test Journey - INFO - Actions: 0/1 succeeded
+2025-11-17 08:25:35,230 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-11-17 08:25:35,230 - Journey.Test Journey - INFO - Description: Test Description
+2025-11-17 08:25:35,230 - Journey.Test Journey - INFO - Steps: 1
+2025-11-17 08:25:35,230 - Journey.Test Journey - INFO - Authentication required: Test Auth
+2025-11-17 08:25:35,230 - Journey.Test Journey - INFO - Authentication successful
+2025-11-17 08:25:35,230 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-11-17 08:25:35,230 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-11-17 08:25:35,230 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-11-17 08:25:35,230 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-11-17 08:25:35,230 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-11-17 08:25:35,230 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-11-17 08:25:35,230 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-11-17 08:25:36,084 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2025-11-17 08:25:36,085 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-11-17 08:25:36,085 - Journey.Test Journey - INFO - Journey completed in 0.85 seconds
+2025-11-17 08:25:36,085 - Journey.Test Journey - INFO - Overall success: True
+2025-11-17 08:25:36,085 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-11-17 08:25:36,085 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-11-17 08:25:36,088 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-11-17 08:25:36,088 - Journey.Test Journey - INFO - Description: Test Description
+2025-11-17 08:25:36,088 - Journey.Test Journey - INFO - Steps: 1
+2025-11-17 08:25:36,088 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-11-17 08:25:36,089 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-11-17 08:25:36,089 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-11-17 08:25:36,089 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-11-17 08:25:36,089 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-11-17 08:25:36,089 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-11-17 08:25:36,089 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-11-17 08:25:46,268 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2025-11-17 08:25:46,268 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-11-17 08:25:46,268 - Journey.Test Journey - INFO - Journey completed in 10.18 seconds
+2025-11-17 08:25:46,268 - Journey.Test Journey - INFO - Overall success: True
+2025-11-17 08:25:46,268 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-11-17 08:25:46,268 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-11-17 08:27:54,076 - scythe.core.csrf - WARNING - Possible CSRF failure detected (status 403), attempting to refresh token
+2025-11-17 08:27:54,085 - Journey.ApiRequestAction - INFO - Hit 403 (possible CSRF failure); attempting to refresh token and retry
+2025-11-17 08:27:54,085 - scythe.core.csrf - WARNING - Possible CSRF failure detected (status 403), attempting to refresh token
+2025-11-17 08:27:54,085 - scythe.core.csrf - INFO - Successfully refreshed CSRF token
+2025-11-17 08:27:54,085 - Journey.ApiRequestAction - INFO - Successfully refreshed CSRF token; retrying request
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - STARTING JOURNEY: Test Journey
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - Description: Test with CSRF
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - Target URL: https://example.com
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - Expected Result: SUCCESS
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - Steps: 0
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - CSRF protection enabled: CSRFProtection(extract_from='cookie', cookie_name='csrftoken', header_name='X-CSRF-Token')
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - 
+============================================================
+2025-11-17 08:27:54,088 - Journey.Test Journey - INFO - JOURNEY SUMMARY: Test Journey
+2025-11-17 08:27:54,089 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:27:54,089 - Journey.Test Journey - WARNING - ✗ UNEXPECTED FAILURE: Journey was expected to succeed but failed in 0.00s
+2025-11-17 08:27:54,089 - Journey.Test Journey - INFO - Steps: 0/0 succeeded (0 failed)
+2025-11-17 08:27:54,089 - Journey.Test Journey - INFO - Actions: 0/0 succeeded (0 failed)
+2025-11-17 08:27:54,089 - Journey.Test Journey - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-11-17 08:27:54,089 - Journey.Test Journey - ERROR - 
+✗ TEST FAILED: Journey results differed from expected
+2025-11-17 08:27:54,089 - Journey.Test Journey - INFO - ============================================================

@@ -10,6 +10,7 @@ import requests
 
 from .base import Action
 from ..core.ttp import TTP
+from ..core.csrf import CSRFProtection
 
 
 class NavigateAction(Action):
@@ -787,6 +788,17 @@ class ApiRequestAction(Action):
         if self.headers:
             final_headers.update(self.headers)
 
+        # Inject CSRF token if CSRF protection is enabled
+        csrf_protection = context.get('csrf_protection')
+        if isinstance(csrf_protection, CSRFProtection):
+            # Inject CSRF into headers (and potentially body data)
+            final_headers, self.data = csrf_protection.inject_token(
+                headers=final_headers,
+                data=self.data,
+                method=self.method,
+                context=context
+            )
+
         # Simple masking for sensitive headers
         def _mask_headers(headers: Dict[str, Any]) -> Dict[str, Any]:
             masked = {}
@@ -878,6 +890,10 @@ class ApiRequestAction(Action):
                 context['last_response_headers'] = response_headers
                 context['last_response_url'] = resolved_url
 
+                # Extract CSRF token from response if CSRF protection is enabled
+                if isinstance(csrf_protection, CSRFProtection) and csrf_protection.auto_extract:
+                    csrf_protection.extract_token(response=response, session=session, context=context)
+
                 # Parse rate-limit headers (if honor_rate_limit is enabled)
                 if self.honor_rate_limit:
                     try:
@@ -907,6 +923,38 @@ class ApiRequestAction(Action):
                                     pass
                                 time.sleep(wait_s)
                                 continue  # retry once
+                        # Handle potential CSRF failures (403 Forbidden, 419 Page Expired)
+                        elif status_code in [403, 419] and isinstance(csrf_protection, CSRFProtection):
+                            if attempt == 0 and csrf_protection.should_retry(response):
+                                # Attempt to refresh CSRF token
+                                try:
+                                    logger.info(f"Hit {status_code} (possible CSRF failure); attempting to refresh token and retry")
+                                except Exception:
+                                    pass
+                                refreshed = csrf_protection.handle_csrf_failure(
+                                    response=response,
+                                    session=session,
+                                    base_url=base_url,
+                                    context=context
+                                )
+                                if refreshed:
+                                    # Re-inject the new token into headers
+                                    final_headers, self.data = csrf_protection.inject_token(
+                                        headers=final_headers,
+                                        data=self.data,
+                                        method=self.method,
+                                        context=context
+                                    )
+                                    try:
+                                        logger.info("Successfully refreshed CSRF token; retrying request")
+                                    except Exception:
+                                        pass
+                                    continue  # retry with new token
+                                else:
+                                    try:
+                                        logger.warning("Failed to refresh CSRF token; not retrying")
+                                    except Exception:
+                                        pass
                         else:
                             # If remaining == 0, set resume time based on reset header or sensible default
                             try:

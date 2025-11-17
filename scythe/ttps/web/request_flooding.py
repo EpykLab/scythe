@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import random
 
 from ...core.ttp import TTP
+from ...core.csrf import CSRFProtection
 from ...payloads.generators import PayloadGenerator
 
 
@@ -43,6 +44,7 @@ class RequestFloodingTTP(TTP):
                  expected_result: bool = False,
                  authentication=None,
                  execution_mode: str = 'api',
+                 csrf_protection=None,
                  success_indicators: Optional[Dict[str, Any]] = None,
                  user_agents: Optional[List[str]] = None,
                  randomize_timing: bool = True):
@@ -66,6 +68,7 @@ class RequestFloodingTTP(TTP):
             expected_result: False = expect app to resist/rate-limit, True = expect success
             authentication: Optional authentication mechanism
             execution_mode: 'ui' or 'api'
+            csrf_protection: Optional CSRF protection configuration for API mode
             success_indicators: Dict defining what constitutes successful flooding detection
             user_agents: List of user agents to rotate through (helps bypass simple filtering)
             randomize_timing: Whether to randomize request timing to appear more natural
@@ -75,7 +78,8 @@ class RequestFloodingTTP(TTP):
             description=f"Tests application resilience against {attack_pattern} flooding attacks with {request_count} requests",
             expected_result=expected_result,
             authentication=authentication,
-            execution_mode=execution_mode
+            execution_mode=execution_mode,
+            csrf_protection=csrf_protection
         )
         
         # Core configuration
@@ -347,12 +351,25 @@ class RequestFloodingTTP(TTP):
         headers = {
             'User-Agent': payload['user_agent']
         }
-        
+
         # Merge auth headers from context
         auth_headers = context.get('auth_headers', {})
         if auth_headers:
             headers.update(auth_headers)
-        
+
+        # Inject CSRF token if CSRF protection is enabled
+        csrf_protection = context.get('csrf_protection')
+        data = payload.get('data')
+        if isinstance(csrf_protection, CSRFProtection):
+            headers, data = csrf_protection.inject_token(
+                headers=headers,
+                data=data,
+                method=self.http_method,
+                context=context
+            )
+            if data is not None:
+                payload['data'] = data
+
         # Wait for the calculated delay
         delay = payload['delay']
         if delay > 0:
@@ -386,7 +403,11 @@ class RequestFloodingTTP(TTP):
             # Record the result
             response_time = time.time() - start_time
             self._record_api_result(response, response_time, context)
-            
+
+            # Extract CSRF token from response if CSRF protection is enabled
+            if isinstance(csrf_protection, CSRFProtection) and csrf_protection.auto_extract:
+                csrf_protection.extract_token(response=response, session=session, context=context)
+
             return response
             
         except requests.exceptions.Timeout:

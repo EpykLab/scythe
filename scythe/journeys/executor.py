@@ -146,7 +146,12 @@ class JourneyExecutor:
                 self.journey.set_context('requests_session', session)
                 self.journey.set_context('auth_headers', auth_headers)
                 self.journey.set_context('auth_cookies', auth_cookies)
-                
+
+                # Initialize CSRF protection if configured
+                if getattr(self.journey, 'csrf_protection', None):
+                    self.journey.set_context('csrf_protection', self.journey.csrf_protection)
+                    self.logger.info(f"CSRF protection enabled: {self.journey.csrf_protection}")
+
                 # Execute a journey with a None driver (API actions ignore a driver)
                 self.execution_results = self.journey.execute(None, self.target_url)
             else:

@@ -6,6 +6,7 @@ import logging
 
 if TYPE_CHECKING:
     from ..auth.base import Authentication
+    from ..core.csrf import CSRFProtection
 
 
 class Action(ABC):
@@ -264,27 +265,30 @@ class Journey:
     that may include authentication, navigation, data entry, and verification.
     """
     
-    def __init__(self, 
-                 name: str, 
-                 description: str, 
+    def __init__(self,
+                 name: str,
+                 description: str,
                  steps: Optional[List[Step]] = None,
                  expected_result: bool = True,
-                 authentication: Optional['Authentication'] = None):
+                 authentication: Optional['Authentication'] = None,
+                 csrf_protection: Optional['CSRFProtection'] = None):
         """
         Initialize a journey.
-        
+
         Args:
             name: Name of the journey
             description: Description of what this journey tests
             steps: List of steps to execute in this journey
             expected_result: Whether this journey is expected to succeed overall
             authentication: Optional authentication to perform before journey
+            csrf_protection: Optional CSRF protection configuration for API mode
         """
         self.name = name
         self.description = description
         self.steps = steps or []
         self.expected_result = expected_result
         self.authentication = authentication
+        self.csrf_protection = csrf_protection
         self.context = {}  # Shared data between steps
         self.execution_results = []
         self.journey_data = {}

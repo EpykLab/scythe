@@ -192,13 +192,13 @@ class TTPExecutor:
             'auth_headers': {},
             'rate_limit_resume_at': None
         }
-        
+
         try:
             # Handle authentication if required (API mode)
             if self.ttp.requires_authentication():
                 auth_name = self.ttp.authentication.name if self.ttp.authentication else "Unknown"
                 self.logger.info(f"Authentication required for TTP: {auth_name}")
-                
+
                 # Try to get auth headers directly
                 try:
                     if hasattr(self.ttp.authentication, 'get_auth_headers'):
@@ -208,6 +208,11 @@ class TTPExecutor:
                         self.logger.info("Authentication headers applied")
                 except Exception as e:
                     self.logger.warning(f"Failed to get auth headers: {e}")
+
+            # Initialize CSRF protection if configured
+            if getattr(self.ttp, 'csrf_protection', None):
+                context['csrf_protection'] = self.ttp.csrf_protection
+                self.logger.info(f"CSRF protection enabled: {self.ttp.csrf_protection}")
             
             consecutive_failures = 0
             
