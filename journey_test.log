@@ -2825,3 +2825,85 @@ No X-SCYTHE-TARGET-VERSION headers detected in responses.
 2025-11-17 08:27:54,089 - Journey.Test Journey - ERROR - 
 ✗ TEST FAILED: Journey results differed from expected
 2025-11-17 08:27:54,089 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:44:09,210 - scythe.core.csrf - WARNING - Possible CSRF failure detected (status 403), attempting to refresh token
+2025-11-17 08:44:09,220 - Journey.ApiRequestAction - INFO - Hit 403 (possible CSRF failure); attempting to refresh token and retry
+2025-11-17 08:44:09,220 - scythe.core.csrf - WARNING - Possible CSRF failure detected (status 403), attempting to refresh token
+2025-11-17 08:44:09,220 - scythe.core.csrf - INFO - Successfully refreshed CSRF token
+2025-11-17 08:44:09,220 - Journey.ApiRequestAction - INFO - Successfully refreshed CSRF token; retrying request
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - STARTING JOURNEY: Test Journey
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - Description: Test with CSRF
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - Target URL: https://example.com
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - Expected Result: SUCCESS
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - Steps: 0
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - CSRF protection enabled: CSRFProtection(extract_from='cookie', cookie_name='csrftoken', header_name='X-CSRF-Token')
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - 
+============================================================
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - JOURNEY SUMMARY: Test Journey
+2025-11-17 08:44:09,223 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:44:09,224 - Journey.Test Journey - WARNING - ✗ UNEXPECTED FAILURE: Journey was expected to succeed but failed in 0.00s
+2025-11-17 08:44:09,224 - Journey.Test Journey - INFO - Steps: 0/0 succeeded (0 failed)
+2025-11-17 08:44:09,224 - Journey.Test Journey - INFO - Actions: 0/0 succeeded (0 failed)
+2025-11-17 08:44:09,224 - Journey.Test Journey - INFO - 
+No X-SCYTHE-TARGET-VERSION headers detected in responses.
+2025-11-17 08:44:09,224 - Journey.Test Journey - ERROR - 
+✗ TEST FAILED: Journey results differed from expected
+2025-11-17 08:44:09,224 - Journey.Test Journey - INFO - ============================================================
+2025-11-17 08:44:09,225 - scythe.ttps.web.csrf_validation - INFO - Testing /api/test - with_invalid_token
+2025-11-17 08:44:09,225 - scythe.ttps.web.csrf_validation - INFO - Testing /api/test - with_valid_token
+2025-11-17 08:44:09,226 - scythe.ttps.web.csrf_validation - INFO - Testing /api/test - without_token
+2025-11-17 08:44:09,226 - scythe.ttps.web.csrf_validation - WARNING - No CSRF protection configured - will only test rejection without tokens
+2025-11-17 08:44:09,226 - scythe.ttps.web.csrf_validation - WARNING - ✗ /api/test - without_token: NOT rejected! Got 200 (VULNERABILITY)
+2025-11-17 08:44:09,226 - scythe.ttps.web.csrf_validation - INFO - ✓ /api/test - without_token: Correctly rejected with 403
+2025-11-17 08:44:09,226 - scythe.ttps.web.csrf_validation - WARNING - ✗ /api/test - with_valid_token: Rejected valid token! Got 403
+2025-11-17 08:44:09,227 - scythe.ttps.web.csrf_validation - INFO - ✓ /api/test - with_valid_token: Correctly accepted with 200
+2025-11-17 08:44:29,578 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-11-17 08:44:29,578 - Journey.Test Journey - INFO - Description: Test Description
+2025-11-17 08:44:29,578 - Journey.Test Journey - INFO - Steps: 1
+2025-11-17 08:44:29,579 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-11-17 08:44:29,579 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-11-17 08:44:29,579 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-11-17 08:44:29,579 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-11-17 08:44:29,579 - Journey.Step.Test Step - ERROR - ✗ Action failed: Test Action
+2025-11-17 08:44:29,579 - Journey.Test Journey - ERROR - ✗ Step failed: Test Step
+2025-11-17 08:44:34,922 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2025-11-17 08:44:34,923 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-11-17 08:44:34,923 - Journey.Test Journey - INFO - Journey completed in 5.34 seconds
+2025-11-17 08:44:34,923 - Journey.Test Journey - INFO - Overall success: False
+2025-11-17 08:44:34,923 - Journey.Test Journey - INFO - Steps: 0/1 succeeded
+2025-11-17 08:44:34,923 - Journey.Test Journey - INFO - Actions: 0/1 succeeded
+2025-11-17 08:44:34,927 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-11-17 08:44:34,927 - Journey.Test Journey - INFO - Description: Test Description
+2025-11-17 08:44:34,927 - Journey.Test Journey - INFO - Steps: 1
+2025-11-17 08:44:34,927 - Journey.Test Journey - INFO - Authentication required: Test Auth
+2025-11-17 08:44:34,927 - Journey.Test Journey - INFO - Authentication successful
+2025-11-17 08:44:34,927 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-11-17 08:44:34,927 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-11-17 08:44:34,927 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-11-17 08:44:34,927 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-11-17 08:44:34,927 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-11-17 08:44:34,927 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-11-17 08:44:34,928 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-11-17 08:44:39,226 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2025-11-17 08:44:39,227 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-11-17 08:44:39,227 - Journey.Test Journey - INFO - Journey completed in 4.30 seconds
+2025-11-17 08:44:39,227 - Journey.Test Journey - INFO - Overall success: True
+2025-11-17 08:44:39,227 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-11-17 08:44:39,227 - Journey.Test Journey - INFO - Actions: 1/1 succeeded
+2025-11-17 08:44:39,230 - Journey.Test Journey - INFO - Starting journey: Test Journey
+2025-11-17 08:44:39,230 - Journey.Test Journey - INFO - Description: Test Description
+2025-11-17 08:44:39,230 - Journey.Test Journey - INFO - Steps: 1
+2025-11-17 08:44:39,231 - Journey.Test Journey - INFO - Step 1/1: Test Step
+2025-11-17 08:44:39,231 - Journey.Step.Test Step - INFO - Executing step: Test Step
+2025-11-17 08:44:39,231 - Journey.Step.Test Step - INFO - Description: Test Description
+2025-11-17 08:44:39,231 - Journey.Step.Test Step - INFO - Action 1/1: Test Action
+2025-11-17 08:44:39,231 - Journey.Step.Test Step - INFO - ✓ Action succeeded: Test Action
+2025-11-17 08:44:39,231 - Journey.Step.Test Step - INFO - Step completed: 1 successes, 0 failures
+2025-11-17 08:44:39,231 - Journey.Test Journey - INFO - ✓ Step succeeded: Test Step
+2025-11-17 08:44:39,885 - HeaderExtractor - WARNING - Failed to make HEAD request to http://test.com: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+2025-11-17 08:44:39,886 - HeaderExtractor - WARNING - Failed to extract target version from logs: 'Mock' object is not reversible
+2025-11-17 08:44:39,886 - Journey.Test Journey - INFO - Journey completed in 0.66 seconds
+2025-11-17 08:44:39,886 - Journey.Test Journey - INFO - Overall success: True
+2025-11-17 08:44:39,886 - Journey.Test Journey - INFO - Steps: 1/1 succeeded
+2025-11-17 08:44:39,886 - Journey.Test Journey - INFO - Actions: 1/1 succeeded

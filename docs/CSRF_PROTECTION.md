@@ -397,6 +397,42 @@ Both can return 403 Forbidden. Here's how Scythe handles this:
 - Verify your authentication is working (separate from CSRF)
 - Use browser DevTools to compare your API requests with real browser requests
 
+## Validating CSRF Enforcement
+
+### CSRFValidationTTP - Test if CSRF is Actually Working
+
+Scythe includes a dedicated TTP to **test whether CSRF protection is actually enforced** by your application:
+
+```python
+from scythe.ttps.web.csrf_validation import CSRFValidationTTP
+from scythe.core.executor import TTPExecutor
+
+csrf = CSRFProtection(
+    cookie_name='__Host-csrf_',
+    header_name='X-CSRF-Token'
+)
+
+ttp = CSRFValidationTTP(
+    target_endpoints=['/api/users', '/api/posts', '/api/delete'],
+    csrf_protection=csrf,
+    expected_result=True  # Expect CSRF to be enforced
+)
+
+executor = TTPExecutor(ttp=ttp, target_url='https://your-app.com')
+executor.run()
+
+summary = ttp.get_validation_summary()
+print(f"Result: {summary['overall_result']}")  # SECURE or VULNERABLE
+print(f"Protected: {summary['protection_rate']}")
+```
+
+**What it tests:**
+1. ❌ Requests WITHOUT CSRF token → Should be rejected (403/419)
+2. ✅ Requests WITH valid CSRF token → Should succeed (200)
+3. ❌ Requests with INVALID CSRF token → Should be rejected (403/419)
+
+See [CSRF Validation Documentation](CSRF_VALIDATION.md) for complete details.
+
 ## Implementation Notes
 
 - CSRF protection is **only active in API mode**
