@@ -6,6 +6,7 @@ import requests
 
 from ...core.ttp import TTP
 from ...payloads.generators import PayloadGenerator
+from ...core.csrf import CSRFProtection
 
 class InputFieldInjector(TTP):
     """
@@ -25,7 +26,8 @@ class InputFieldInjector(TTP):
                  execution_mode: str = 'ui',
                  api_endpoint: Optional[str] = None,
                  injection_field: str = 'query',
-                 http_method: str = 'POST'):
+                 http_method: str = 'POST',
+                 csrf_protection=None):
         """
         Initialize the SQL Injection TTP.
         
@@ -46,6 +48,7 @@ class InputFieldInjector(TTP):
             description="Simulate SQL injection by injecting payloads into input fields",
             expected_result=expected_result,
             authentication=authentication,
+            csrf_protection=csrf_protection,
             execution_mode=execution_mode)
 
         # UI mode fields
@@ -112,12 +115,24 @@ class InputFieldInjector(TTP):
             raise ValueError("target_url must be set in context for API mode")
         
         url = urljoin(base_url, self.api_endpoint or '/search')
+              
+        body = {self.injection_field: payload}
         
         # Merge auth headers from context
         headers = {}
         auth_headers = context.get('auth_headers', {})
         if auth_headers:
             headers.update(auth_headers)
+
+        csrf_protection = context.get('csrf_protection')
+        if isinstance(csrf_protection, CSRFProtection):
+            headers, body = csrf_protection.inject_token(
+                headers=headers,
+                data=body,
+                method='POST',
+                context=context
+            )
+
         
         # Honor rate limiting
         import time
@@ -134,7 +149,7 @@ class InputFieldInjector(TTP):
             response = session.get(url, params={self.injection_field: payload}, headers=headers or None, timeout=10.0)
         else:
             # For POST/PUT/etc, put payload in JSON body
-            body = {self.injection_field: payload}
+            body = body
             response = session.request(self.http_method, url, json=body, headers=headers or None, timeout=10.0)
         
         # Handle rate limiting
