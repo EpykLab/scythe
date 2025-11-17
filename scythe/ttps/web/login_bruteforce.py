@@ -5,6 +5,7 @@ from typing import Dict, Any, Optional
 import requests
 
 from ...core.ttp import TTP
+from ...core.csrf import CSRFProtection
 from ...payloads.generators import PayloadGenerator
 
 class LoginBruteforceTTP(TTP):
@@ -27,10 +28,11 @@ class LoginBruteforceTTP(TTP):
                  api_endpoint: Optional[str] = None,
                  username_field: str = 'username',
                  password_field: str = 'password',
-                 success_indicators: Optional[Dict[str, Any]] = None):
+                 success_indicators: Optional[Dict[str, Any]] = None,
+                 csrf_protection=None):
         """
         Initialize the Login Bruteforce TTP.
-        
+
         Args:
             payload_generator: Generator that yields password payloads
             username: Username to attempt login with
@@ -45,13 +47,15 @@ class LoginBruteforceTTP(TTP):
             password_field: Field name for password in API request body (API mode)
             success_indicators: Dict with keys 'status_code' (int), 'response_contains' (str),
                               'response_not_contains' (str) to determine successful login in API mode
+            csrf_protection: Optional CSRF protection configuration for API mode
         """
         super().__init__(
             name="Login Bruteforce",
             description="Attempts to guess a user's password using a list of payloads.",
             expected_result=expected_result,
             authentication=authentication,
-            execution_mode=execution_mode
+            execution_mode=execution_mode,
+            csrf_protection=csrf_protection
         )
         self.payload_generator = payload_generator
         self.username = username
@@ -135,7 +139,17 @@ class LoginBruteforceTTP(TTP):
         auth_headers = context.get('auth_headers', {})
         if auth_headers:
             headers.update(auth_headers)
-        
+
+        # Inject CSRF token if configured
+        csrf_protection = context.get('csrf_protection')
+        if isinstance(csrf_protection, CSRFProtection):
+            headers, body = csrf_protection.inject_token(
+                headers=headers,
+                data=body,
+                method='POST',
+                context=context
+            )
+
         # Honor rate limiting
         import time
         resume_at = context.get('rate_limit_resume_at')
@@ -144,7 +158,7 @@ class LoginBruteforceTTP(TTP):
             wait_s = min(resume_at - now, 30)
             if wait_s > 0:
                 time.sleep(wait_s)
-        
+
         # Make the request
         response = session.post(url, json=body, headers=headers or None, timeout=10.0)
         
@@ -156,7 +170,11 @@ class LoginBruteforceTTP(TTP):
             except (ValueError, TypeError):
                 wait_s = 1
             context['rate_limit_resume_at'] = time.time() + min(wait_s, 30)
-        
+
+        # Extract CSRF token from response if auto-extraction is enabled
+        if isinstance(csrf_protection, CSRFProtection) and csrf_protection.auto_extract:
+            csrf_protection.extract_token(response=response, session=session, context=context)
+
         return response
     
     def verify_result_api(self, response: requests.Response, context: Dict[str, Any]) -> bool:
