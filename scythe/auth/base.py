@@ -1,28 +1,36 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, TYPE_CHECKING
 from selenium.webdriver.remote.webdriver import WebDriver
+
+if TYPE_CHECKING:
+    from ..core.csrf import CSRFProtection
 
 
 class Authentication(ABC):
     """
     Abstract base class for authentication mechanisms.
-    
+
     This class defines the interface for authentication methods that can be
     used with TTPs to authenticate before executing the main test logic.
+
+    Supports optional CSRF protection for authentication endpoints that
+    require CSRF tokens.
     """
-    
-    def __init__(self, name: str, description: str):
+
+    def __init__(self, name: str, description: str, csrf_protection: Optional['CSRFProtection'] = None):
         """
         Initialize the authentication mechanism.
-        
+
         Args:
             name: Name of the authentication method
             description: Description of what this authentication does
+            csrf_protection: Optional CSRF protection configuration for authentication endpoints
         """
         self.name = name
         self.description = description
         self.authenticated = False
         self.auth_data = {}
+        self.csrf_protection = csrf_protection
     
     @abstractmethod
     def authenticate(self, driver: WebDriver, target_url: str) -> bool:

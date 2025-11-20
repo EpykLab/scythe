@@ -101,14 +101,6 @@ class _FakeLoginResponse:
         return self._data
 
 
-class _FakeLoginSession:
-    def __init__(self, data: Dict[str, Any]):
-        self._data = data
-
-    def post(self, url, json=None, timeout=None):
-        return _FakeLoginResponse(self._data, 200)
-
-
 class _CookieJar:
     def __init__(self):
         self._cookies: Dict[str, str] = {}
@@ -118,6 +110,18 @@ class _CookieJar:
 
     def get(self, key: str, default=None):
         return self._cookies.get(key, default)
+
+
+class _FakeLoginSession:
+    def __init__(self, data: Dict[str, Any]):
+        self._data = data
+        self.cookies = _CookieJar()
+
+    def post(self, url, json=None, timeout=None, data=None, headers=None):
+        return _FakeLoginResponse(self._data, 200)
+
+    def get(self, url, timeout=None):
+        return _FakeLoginResponse(self._data, 200)
 
 
 class _FakeRequestsSession:

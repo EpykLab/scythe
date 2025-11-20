@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, TYPE_CHECKING
 from urllib.parse import urlparse
 
 try:
@@ -11,6 +11,9 @@ except Exception:  # pragma: no cover - tests may run without requests installed
 from selenium.webdriver.remote.webdriver import WebDriver
 
 from .base import Authentication, AuthenticationError
+
+if TYPE_CHECKING:
+    from ..core.csrf import CSRFProtection
 
 
 def _extract_by_dot_path(data: Any, path: str) -> Optional[Any]:
@@ -74,10 +77,12 @@ class CookieJWTAuth(Authentication):
                  content_type: str = "json",
                  jwt_source: str = "json",
                  session: Optional[requests.Session] = None,
-                 description: str = "Authenticate via API and set JWT cookie"):
+                 description: str = "Authenticate via API and set JWT cookie",
+                 csrf_protection: Optional['CSRFProtection'] = None):
         super().__init__(
             name="Cookie JWT Authentication",
-            description=description
+            description=description,
+            csrf_protection=csrf_protection
         )
         self.login_url = login_url
         self.username = username
@@ -94,19 +99,68 @@ class CookieJWTAuth(Authentication):
         self.token: Optional[str] = None
 
     def _login_and_get_token(self) -> str:
+        # Import here to avoid circular imports
+        from ..core.csrf import CSRFProtection
+
+        # Create auth context for CSRF
+        context = {}
+
+        # If CSRF protection is configured, get initial CSRF token
+        headers = {}
+        if isinstance(self.csrf_protection, CSRFProtection):
+            try:
+                # Make GET request to login endpoint to get CSRF token
+                resp = self._session.get(self.login_url, timeout=15)
+                # Extract CSRF token from the GET response
+                self.csrf_protection.extract_token(
+                    response=resp,
+                    session=self._session,
+                    context=context
+                )
+            except Exception as e:
+                raise AuthenticationError(f"Failed to get CSRF token: {e}", self.name)
+
         payload: Dict[str, Any] = dict(self.extra_fields)
         payload[self.username_field] = self.username
         payload[self.password_field] = self.password
+
+        # Inject CSRF token into login request
+        if isinstance(self.csrf_protection, CSRFProtection):
+            headers, payload = self.csrf_protection.inject_token(
+                headers=headers,
+                data=payload,
+                method='POST',
+                context=context
+            )
+
         try:
             if self.content_type == "form":
-                resp = self._session.post(self.login_url, data=payload, timeout=15)
+                resp = self._session.post(
+                    self.login_url,
+                    data=payload,
+                    headers=headers or None,
+                    timeout=15
+                )
             else:
-                resp = self._session.post(self.login_url, json=payload, timeout=15)
+                resp = self._session.post(
+                    self.login_url,
+                    json=payload,
+                    headers=headers or None,
+                    timeout=15
+                )
             # try json; raise on non-2xx to surface errors
             resp.raise_for_status()
         except Exception as e:
             raise AuthenticationError(f"Login request failed: {e}", self.name)
-        
+
+        # Extract updated CSRF token from response if auto-extraction enabled
+        if isinstance(self.csrf_protection, CSRFProtection) and self.csrf_protection.auto_extract:
+            self.csrf_protection.extract_token(
+                response=resp,
+                session=self._session,
+                context=context
+            )
+
         # Extract token from either response cookies or JSON body
         token = None
         if self.jwt_source == "cookie":
@@ -129,7 +183,7 @@ class CookieJWTAuth(Authentication):
                     f"JWT not found at path '{self.jwt_json_path}' in login response",
                     self.name,
                 )
-        
+
         self.token = token
         self.store_auth_data('jwt', token)
         self.store_auth_data('login_time', time.time())

@@ -1,10 +1,13 @@
 import time
-from typing import Dict, Optional
+from typing import Dict, Optional, TYPE_CHECKING
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 
 from .base import Authentication, AuthenticationError
+
+if TYPE_CHECKING:
+    from ..core.csrf import CSRFProtection
 
 
 class BearerTokenAuth(Authentication):
@@ -15,17 +18,18 @@ class BearerTokenAuth(Authentication):
     token acquisition through login flows.
     """
     
-    def __init__(self, 
+    def __init__(self,
                  token: Optional[str] = None,
                  token_url: Optional[str] = None,
                  username: Optional[str] = None,
                  password: Optional[str] = None,
                  token_field_name: str = "access_token",
                  auth_header_name: str = "Authorization",
-                 auth_header_prefix: str = "Bearer"):
+                 auth_header_prefix: str = "Bearer",
+                 csrf_protection: Optional['CSRFProtection'] = None):
         """
         Initialize Bearer Token Authentication.
-        
+
         Args:
             token: Pre-existing bearer token (if available)
             token_url: URL to obtain token from (for login-based auth)
@@ -34,10 +38,12 @@ class BearerTokenAuth(Authentication):
             token_field_name: Field name in response containing the token
             auth_header_name: Header name for authentication
             auth_header_prefix: Prefix for the auth header value
+            csrf_protection: Optional CSRF protection for token acquisition endpoint
         """
         super().__init__(
             name="Bearer Token Authentication",
-            description="Authenticates using bearer tokens for API access"
+            description="Authenticates using bearer tokens for API access",
+            csrf_protection=csrf_protection
         )
         
         self.token = token

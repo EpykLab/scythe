@@ -1,10 +1,13 @@
 import time
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 
 from .base import Authentication, AuthenticationError
+
+if TYPE_CHECKING:
+    from ..core.csrf import CSRFProtection
 
 
 class BasicAuth(Authentication):
@@ -15,7 +18,7 @@ class BasicAuth(Authentication):
     commonly found in web applications.
     """
     
-    def __init__(self, 
+    def __init__(self,
                  username: str,
                  password: str,
                  login_url: Optional[str] = None,
@@ -23,10 +26,11 @@ class BasicAuth(Authentication):
                  password_selector: Optional[str] = None,
                  submit_selector: Optional[str] = None,
                  success_indicators: Optional[List[str]] = None,
-                 failure_indicators: Optional[List[str]] = None):
+                 failure_indicators: Optional[List[str]] = None,
+                 csrf_protection: Optional['CSRFProtection'] = None):
         """
         Initialize Basic Authentication.
-        
+
         Args:
             username: Username for authentication
             password: Password for authentication
@@ -36,10 +40,12 @@ class BasicAuth(Authentication):
             submit_selector: CSS selector for submit button
             success_indicators: List of strings/selectors that indicate successful login
             failure_indicators: List of strings/selectors that indicate failed login
+            csrf_protection: Optional CSRF protection (handled automatically by browser in UI mode)
         """
         super().__init__(
             name="Basic Authentication",
-            description="Authenticates using username and password forms"
+            description="Authenticates using username and password forms",
+            csrf_protection=csrf_protection
         )
         
         self.username = username
