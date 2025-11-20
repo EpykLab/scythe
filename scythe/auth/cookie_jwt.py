@@ -215,9 +215,30 @@ class CookieJWTAuth(Authentication):
 
     def get_auth_headers(self) -> Dict[str, str]:
         """
-        For this hybrid approach, we typically do not use auth headers.
+        Return headers for API mode. If CSRF protection is configured,
+        includes the CSRF token header for subsequent requests.
         """
-        return {}
+        headers = {}
+
+        # Import here to avoid circular imports
+        from ..core.csrf import CSRFProtection
+
+        # If CSRF protection is configured, inject CSRF header
+        if isinstance(self.csrf_protection, CSRFProtection):
+            # Get the current CSRF token from the session or internal state
+            csrf_token = self.csrf_protection.get_token()
+            if csrf_token:
+                # Inject the token into headers (typically as X-CSRF-Token or similar)
+                headers_with_csrf, _ = self.csrf_protection.inject_token(
+                    headers=headers,
+                    data=None,
+                    method='POST',  # Use POST to trigger injection
+                    context=None
+                )
+                if headers_with_csrf:
+                    headers = headers_with_csrf
+
+        return headers
 
     def authenticate(self, driver: WebDriver, target_url: str) -> bool:
         """

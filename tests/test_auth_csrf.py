@@ -276,6 +276,66 @@ class TestCookieJWTAuthWithCSRF(unittest.TestCase):
         self.assertTrue(mock_session.get.called)
         self.assertTrue(mock_session.post.called)
 
+    def test_cookie_jwt_auth_get_auth_headers_with_csrf(self):
+        """Test that get_auth_headers returns CSRF header when CSRF protection is configured."""
+        csrf = CSRFProtection(
+            extract_from='cookie',
+            cookie_name='csrftoken',
+            header_name='X-CSRF-Token',
+            auto_extract=True
+        )
+
+        # Mock session
+        mock_session = Mock(spec=requests.Session)
+        mock_get_response = Mock(spec=requests.Response)
+        mock_get_response.status_code = 200
+
+        mock_post_response = Mock(spec=requests.Response)
+        mock_post_response.status_code = 200
+        mock_post_response.json.return_value = {'token': 'jwt-123'}
+        mock_post_response.raise_for_status = Mock()
+
+        # Setup session cookies with CSRF token
+        mock_session_cookies = MagicMock()
+        mock_session_cookies.get.return_value = 'csrf-token-value'
+        mock_session.cookies = mock_session_cookies
+
+        mock_session.get.return_value = mock_get_response
+        mock_session.post.return_value = mock_post_response
+
+        auth = CookieJWTAuth(
+            login_url='https://api.example.com/login',
+            username='user@example.com',
+            password='secret',
+            csrf_protection=csrf,
+            session=mock_session
+        )
+
+        # Trigger login to get CSRF token
+        auth.get_auth_cookies()
+
+        # Now get auth headers - should include CSRF header
+        headers = auth.get_auth_headers()
+
+        # Verify CSRF header is present
+        self.assertIn('X-CSRF-Token', headers)
+        self.assertEqual(headers['X-CSRF-Token'], 'csrf-token-value')
+
+    def test_cookie_jwt_auth_get_auth_headers_without_csrf(self):
+        """Test that get_auth_headers returns empty dict when no CSRF protection is configured."""
+        auth = CookieJWTAuth(
+            login_url='https://api.example.com/login',
+            username='user@example.com',
+            password='secret'
+            # No csrf_protection
+        )
+
+        # Get auth headers - should be empty
+        headers = auth.get_auth_headers()
+
+        # Verify no headers are returned
+        self.assertEqual(headers, {})
+
 
 class TestAuthenticationSessionEndpoint(unittest.TestCase):
     """Test session_endpoint feature for all authentication methods."""
