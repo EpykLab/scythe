@@ -106,22 +106,16 @@ class CookieJWTAuth(Authentication):
 
         # Create auth context for CSRF
         context = {}
-
-        # If session_endpoint is configured, GET it first to establish session/CSRF
-        if self.session_endpoint:
-            try:
-                self._session.get(self.session_endpoint, timeout=15)
-            except Exception as e:
-                raise AuthenticationError(f"Failed to establish session at {self.session_endpoint}: {e}", self.name)
+        headers = {}
 
         # If CSRF protection is configured, get initial CSRF token
-        headers = {}
         if isinstance(self.csrf_protection, CSRFProtection):
-            # If session_endpoint was used, CSRF is already in cookies from that GET
-            # Otherwise, try to extract from login endpoint
-            endpoint_for_csrf = self.session_endpoint if self.session_endpoint else self.login_url
+            # Use session_endpoint if available (to get fresh session + CSRF)
+            # Otherwise use login_url
+            # Important: Only make ONE GET request to avoid regenerating tokens
+            csrf_endpoint = self.session_endpoint if self.session_endpoint else self.login_url
             try:
-                resp = self._session.get(endpoint_for_csrf, timeout=15)
+                resp = self._session.get(csrf_endpoint, timeout=15)
                 # Extract CSRF token from the GET response
                 self.csrf_protection.extract_token(
                     response=resp,
@@ -130,6 +124,12 @@ class CookieJWTAuth(Authentication):
                 )
             except Exception as e:
                 raise AuthenticationError(f"Failed to get CSRF token: {e}", self.name)
+        elif self.session_endpoint:
+            # No CSRF, but session_endpoint is set - just establish the session
+            try:
+                self._session.get(self.session_endpoint, timeout=15)
+            except Exception as e:
+                raise AuthenticationError(f"Failed to establish session at {self.session_endpoint}: {e}", self.name)
 
         payload: Dict[str, Any] = dict(self.extra_fields)
         payload[self.username_field] = self.username
