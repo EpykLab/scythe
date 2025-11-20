@@ -144,27 +144,8 @@ class CookieJWTAuth(Authentication):
                 context=context
             )
 
-        # Ensure cookies are explicitly sent in headers for double-submit CSRF
-        # (Some frameworks/configurations don't send cookies automatically)
-        if self._session.cookies:
-            try:
-                # Build cookie header from all cookies in the jar
-                cookies_list = []
-                for cookie_name in self._session.cookies:
-                    cookie_value = self._session.cookies.get(cookie_name)
-                    if cookie_value:
-                        cookies_list.append(f'{cookie_name}={cookie_value}')
-                if cookies_list and 'Cookie' not in headers:
-                    headers['Cookie'] = '; '.join(cookies_list)
-            except (TypeError, AttributeError):
-                # If iteration fails, try dict-like access
-                try:
-                    cookies_dict = dict(self._session.cookies)
-                    if cookies_dict and 'Cookie' not in headers:
-                        cookie_header = '; '.join([f'{k}={v}' for k, v in cookies_dict.items()])
-                        headers['Cookie'] = cookie_header
-                except Exception:
-                    pass  # If we can't build cookie header, let requests handle it
+        # Note: requests.Session automatically handles cookies from Set-Cookie headers
+        # and sends them in subsequent requests. No manual Cookie header needed.
 
         try:
             if self.content_type == "form":

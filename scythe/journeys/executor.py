@@ -140,6 +140,15 @@ class JourneyExecutor:
                             session.cookies.set(ck, cv)
                         except Exception:
                             pass
+
+                # Also copy any cookies from the authentication object's internal session
+                # (e.g., CSRF tokens that were generated during login)
+                if hasattr(self.journey.authentication, '_session') and self.journey.authentication._session:
+                    try:
+                        for cookie in self.journey.authentication._session.cookies:
+                            session.cookies.set_cookie(cookie)
+                    except Exception:
+                        pass
                 
                 # Seed journey context for API actions
                 self.journey.set_context('mode', 'API')
