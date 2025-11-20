@@ -78,11 +78,13 @@ class CookieJWTAuth(Authentication):
                  jwt_source: str = "json",
                  session: Optional[requests.Session] = None,
                  description: str = "Authenticate via API and set JWT cookie",
-                 csrf_protection: Optional['CSRFProtection'] = None):
+                 csrf_protection: Optional['CSRFProtection'] = None,
+                 session_endpoint: Optional[str] = None):
         super().__init__(
             name="Cookie JWT Authentication",
             description=description,
-            csrf_protection=csrf_protection
+            csrf_protection=csrf_protection,
+            session_endpoint=session_endpoint
         )
         self.login_url = login_url
         self.username = username
@@ -105,12 +107,21 @@ class CookieJWTAuth(Authentication):
         # Create auth context for CSRF
         context = {}
 
+        # If session_endpoint is configured, GET it first to establish session/CSRF
+        if self.session_endpoint:
+            try:
+                self._session.get(self.session_endpoint, timeout=15)
+            except Exception as e:
+                raise AuthenticationError(f"Failed to establish session at {self.session_endpoint}: {e}", self.name)
+
         # If CSRF protection is configured, get initial CSRF token
         headers = {}
         if isinstance(self.csrf_protection, CSRFProtection):
+            # If session_endpoint was used, CSRF is already in cookies from that GET
+            # Otherwise, try to extract from login endpoint
+            endpoint_for_csrf = self.session_endpoint if self.session_endpoint else self.login_url
             try:
-                # Make GET request to login endpoint to get CSRF token
-                resp = self._session.get(self.login_url, timeout=15)
+                resp = self._session.get(endpoint_for_csrf, timeout=15)
                 # Extract CSRF token from the GET response
                 self.csrf_protection.extract_token(
                     response=resp,

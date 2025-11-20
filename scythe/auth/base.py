@@ -17,7 +17,7 @@ class Authentication(ABC):
     require CSRF tokens.
     """
 
-    def __init__(self, name: str, description: str, csrf_protection: Optional['CSRFProtection'] = None):
+    def __init__(self, name: str, description: str, csrf_protection: Optional['CSRFProtection'] = None, session_endpoint: Optional[str] = None):
         """
         Initialize the authentication mechanism.
 
@@ -25,12 +25,14 @@ class Authentication(ABC):
             name: Name of the authentication method
             description: Description of what this authentication does
             csrf_protection: Optional CSRF protection configuration for authentication endpoints
+            session_endpoint: Optional endpoint to GET first to establish session/CSRF before login
         """
         self.name = name
         self.description = description
         self.authenticated = False
         self.auth_data = {}
         self.csrf_protection = csrf_protection
+        self.session_endpoint = session_endpoint
     
     @abstractmethod
     def authenticate(self, driver: WebDriver, target_url: str) -> bool:

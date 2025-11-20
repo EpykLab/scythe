@@ -27,7 +27,8 @@ class BasicAuth(Authentication):
                  submit_selector: Optional[str] = None,
                  success_indicators: Optional[List[str]] = None,
                  failure_indicators: Optional[List[str]] = None,
-                 csrf_protection: Optional['CSRFProtection'] = None):
+                 csrf_protection: Optional['CSRFProtection'] = None,
+                 session_endpoint: Optional[str] = None):
         """
         Initialize Basic Authentication.
 
@@ -41,11 +42,13 @@ class BasicAuth(Authentication):
             success_indicators: List of strings/selectors that indicate successful login
             failure_indicators: List of strings/selectors that indicate failed login
             csrf_protection: Optional CSRF protection (handled automatically by browser in UI mode)
+            session_endpoint: Optional endpoint to GET first to establish session
         """
         super().__init__(
             name="Basic Authentication",
             description="Authenticates using username and password forms",
-            csrf_protection=csrf_protection
+            csrf_protection=csrf_protection,
+            session_endpoint=session_endpoint
         )
         
         self.username = username

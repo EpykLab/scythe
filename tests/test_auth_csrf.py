@@ -277,6 +277,134 @@ class TestCookieJWTAuthWithCSRF(unittest.TestCase):
         self.assertTrue(mock_session.post.called)
 
 
+class TestAuthenticationSessionEndpoint(unittest.TestCase):
+    """Test session_endpoint feature for all authentication methods."""
+
+    def test_basic_auth_with_session_endpoint(self):
+        """Test BasicAuth with session_endpoint."""
+        auth = BasicAuth(
+            username='user',
+            password='pass',
+            session_endpoint='https://app.com/session'
+        )
+
+        self.assertEqual(auth.session_endpoint, 'https://app.com/session')
+
+    def test_bearer_token_auth_with_session_endpoint(self):
+        """Test BearerTokenAuth with session_endpoint."""
+        auth = BearerTokenAuth(
+            token='test-token',
+            session_endpoint='https://api.example.com/session'
+        )
+
+        self.assertEqual(auth.session_endpoint, 'https://api.example.com/session')
+
+    def test_cookie_jwt_auth_with_session_endpoint(self):
+        """Test CookieJWTAuth with session_endpoint."""
+        auth = CookieJWTAuth(
+            login_url='https://api.example.com/login',
+            username='user',
+            password='pass',
+            session_endpoint='https://api.example.com/login'  # GET this first
+        )
+
+        self.assertEqual(auth.session_endpoint, 'https://api.example.com/login')
+
+    def test_session_endpoint_called_before_login(self):
+        """Test that session_endpoint is called before login attempt."""
+        csrf = CSRFProtection(
+            extract_from='cookie',
+            cookie_name='csrftoken',
+            header_name='X-CSRF-Token'
+        )
+
+        # Mock session
+        mock_session = Mock(spec=requests.Session)
+
+        # Mock responses
+        mock_session_response = Mock(spec=requests.Response)
+        mock_session_response.status_code = 200
+
+        mock_login_response = Mock(spec=requests.Response)
+        mock_login_response.status_code = 200
+        mock_login_response.json.return_value = {'token': 'jwt-123'}
+        mock_login_response.raise_for_status = Mock()
+
+        # Setup session cookies
+        mock_session_cookies = MagicMock()
+        mock_session_cookies.get.return_value = 'csrf-token-from-session'
+        mock_session.cookies = mock_session_cookies
+
+        # First GET to session endpoint, then GET for CSRF, then POST for login
+        mock_session.get.return_value = mock_session_response
+        mock_session.post.return_value = mock_login_response
+
+        auth = CookieJWTAuth(
+            login_url='https://api.example.com/auth/login',
+            username='user',
+            password='pass',
+            csrf_protection=csrf,
+            session_endpoint='https://api.example.com/login',  # GET this first
+            session=mock_session
+        )
+
+        # Trigger login
+        auth.get_auth_cookies()
+
+        # Verify session endpoint was called first
+        calls = mock_session.get.call_args_list
+        self.assertTrue(len(calls) >= 1)
+        # First GET should be to session_endpoint
+        self.assertIn('login', calls[0][0][0])
+
+    def test_session_endpoint_with_csrf_pattern(self):
+        """Test Go Fiber pattern: GET /login for CSRF, POST /auth/login for credentials."""
+        csrf = CSRFProtection(
+            extract_from='cookie',
+            cookie_name='__Host-csrf_',
+            header_name='X-Csrf-Token'
+        )
+
+        # Mock session
+        mock_session = Mock(spec=requests.Session)
+
+        # Mock responses
+        mock_session_response = Mock(spec=requests.Response)
+        mock_session_response.status_code = 200
+
+        mock_login_response = Mock(spec=requests.Response)
+        mock_login_response.status_code = 200
+        mock_login_response.json.return_value = {'token': 'jwt-token-xyz'}
+        mock_login_response.raise_for_status = Mock()
+
+        # Setup session cookies with CSRF token
+        mock_session_cookies = MagicMock()
+        mock_session_cookies.get.return_value = '__Host-csrf_token-value'
+        mock_session.cookies = mock_session_cookies
+
+        mock_session.get.return_value = mock_session_response
+        mock_session.post.return_value = mock_login_response
+
+        auth = CookieJWTAuth(
+            login_url='https://localhost:8181/api/v1/auth/login-handler',
+            username='testuser',
+            password='testpass',
+            username_field='email',
+            password_field='password',
+            csrf_protection=csrf,
+            session_endpoint='https://localhost:8181/login',  # Public page with CSRF
+            session=mock_session
+        )
+
+        # Get cookies (triggers login)
+        cookies = auth.get_auth_cookies()
+
+        # Verify the flow
+        self.assertTrue(mock_session.get.called)
+        self.assertTrue(mock_session.post.called)
+        self.assertIn('stellarbridge', cookies)
+
+
 class TestAuthenticationCSRFFrameworkPatterns(unittest.TestCase):
     """Test different framework patterns with authentication."""
 
@@ -332,6 +460,27 @@ class TestAuthenticationCSRFFrameworkPatterns(unittest.TestCase):
         # UI mode authentication uses WebDriver/browser which handles CSRF
         self.assertIsNotNone(auth.csrf_protection)
         # The browser (Selenium/WebDriver) automatically handles CSRF in forms
+
+    def test_go_fiber_pattern_with_session_endpoint(self):
+        """Test Go Fiber pattern: separate session and login endpoints with CSRF."""
+        csrf = CSRFProtection(
+            extract_from='cookie',
+            cookie_name='__Host-csrf_',
+            header_name='X-Csrf-Token'
+        )
+
+        auth = CookieJWTAuth(
+            login_url='https://localhost:8181/api/v1/auth/login-handler',
+            username='testuser@test-mfa.local',
+            password='TestPassword123!',
+            username_field='email',
+            password_field='password',
+            csrf_protection=csrf,
+            session_endpoint='https://localhost:8181/login'  # GET public page first
+        )
+
+        self.assertEqual(auth.session_endpoint, 'https://localhost:8181/login')
+        self.assertEqual(auth.csrf_protection.cookie_name, '__Host-csrf_')
 
 
 if __name__ == '__main__':

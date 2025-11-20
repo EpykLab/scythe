@@ -26,7 +26,8 @@ class BearerTokenAuth(Authentication):
                  token_field_name: str = "access_token",
                  auth_header_name: str = "Authorization",
                  auth_header_prefix: str = "Bearer",
-                 csrf_protection: Optional['CSRFProtection'] = None):
+                 csrf_protection: Optional['CSRFProtection'] = None,
+                 session_endpoint: Optional[str] = None):
         """
         Initialize Bearer Token Authentication.
 
@@ -39,11 +40,13 @@ class BearerTokenAuth(Authentication):
             auth_header_name: Header name for authentication
             auth_header_prefix: Prefix for the auth header value
             csrf_protection: Optional CSRF protection for token acquisition endpoint
+            session_endpoint: Optional endpoint to GET first to establish session
         """
         super().__init__(
             name="Bearer Token Authentication",
             description="Authenticates using bearer tokens for API access",
-            csrf_protection=csrf_protection
+            csrf_protection=csrf_protection,
+            session_endpoint=session_endpoint
         )
         
         self.token = token
