@@ -137,6 +137,8 @@ class CookieJWTAuth(Authentication):
 
         # Inject CSRF token into login request
         if isinstance(self.csrf_protection, CSRFProtection):
+            from urllib.parse import urlparse
+
             headers, payload = self.csrf_protection.inject_token(
                 headers=headers,
                 data=payload,
@@ -144,24 +146,30 @@ class CookieJWTAuth(Authentication):
                 context=context
             )
 
+            # Add Origin header for CSRF validation
+            # Many CSRF implementations check Origin/Referer headers in addition to tokens
+            # Browsers automatically send these for cross-origin requests
+            parsed_url = urlparse(self.login_url)
+            origin = f"{parsed_url.scheme}://{parsed_url.netloc}"
+            if headers is None:
+                headers = {}
+            if 'Origin' not in headers:
+                headers['Origin'] = origin
+            if 'Referer' not in headers:
+                headers['Referer'] = origin + '/'
+
         # Workaround for CSRF cookies with 'secure' flag over HTTP:
         # requests.Session won't send cookies marked as 'secure' over HTTP connections,
         # even for localhost. This is correct behavior per the spec, but many development
         # servers set the secure flag even when running on HTTP localhost.
         # Browsers are lenient for localhost, but requests is strict.
         #
-        # To support local development, we manually add the Cookie header for HTTP requests.
-        from urllib.parse import urlparse
-
-        parsed_url = urlparse(self.login_url)
-        is_http = parsed_url.scheme == 'http'
-
-        if is_http and isinstance(self.csrf_protection, CSRFProtection):
-            # Check if there's a CSRF cookie that won't be sent due to 'secure' flag
+        # To support local development, we manually add the Cookie header.
+        if isinstance(self.csrf_protection, CSRFProtection):
             csrf_cookie_name = self.csrf_protection.cookie_name
             if csrf_cookie_name in self._session.cookies:
                 csrf_cookie_value = self._session.cookies.get(csrf_cookie_name)
-                # Manually add Cookie header for HTTP requests to localhost
+                # Manually add Cookie header
                 if headers is None:
                     headers = {}
                 if 'Cookie' not in headers:
@@ -238,8 +246,8 @@ class CookieJWTAuth(Authentication):
         Return headers for API mode. If CSRF protection is configured,
         includes the CSRF token header for subsequent requests.
 
-        Also includes Cookie header for HTTP requests when cookies have the
-        'secure' flag (which prevents requests library from sending them over HTTP).
+        Also includes Cookie header when cookies may not be sent automatically
+        (e.g., HTTP with secure flag, or domain mismatch issues).
         """
         # Ensure we're authenticated first (triggers login if needed)
         if not self.token:
@@ -249,7 +257,6 @@ class CookieJWTAuth(Authentication):
 
         # Import here to avoid circular imports
         from ..core.csrf import CSRFProtection
-        from urllib.parse import urlparse
 
         # If CSRF protection is configured, inject CSRF header
         if isinstance(self.csrf_protection, CSRFProtection):
@@ -266,11 +273,10 @@ class CookieJWTAuth(Authentication):
                 if headers_with_csrf:
                     headers = headers_with_csrf
 
-            # Workaround: For HTTP requests, manually add CSRF cookie to Cookie header
-            # since requests.Session won't send cookies marked 'secure' over HTTP
-            parsed_url = urlparse(self.login_url)
-            is_http = parsed_url.scheme == 'http'
-            if is_http and self._session:
+            # Workaround: Manually add cookies to Cookie header
+            # This handles both HTTP (where secure cookies won't be sent) and
+            # potential domain mismatch issues
+            if self._session:
                 # Build a list of cookies to include
                 cookies_to_send = []
 
