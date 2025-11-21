@@ -144,8 +144,28 @@ class CookieJWTAuth(Authentication):
                 context=context
             )
 
-        # Note: requests.Session automatically handles cookies from Set-Cookie headers
-        # and sends them in subsequent requests. No manual Cookie header needed.
+        # Workaround for CSRF cookies with 'secure' flag over HTTP:
+        # requests.Session won't send cookies marked as 'secure' over HTTP connections,
+        # even for localhost. This is correct behavior per the spec, but many development
+        # servers set the secure flag even when running on HTTP localhost.
+        # Browsers are lenient for localhost, but requests is strict.
+        #
+        # To support local development, we manually add the Cookie header for HTTP requests.
+        from urllib.parse import urlparse
+
+        parsed_url = urlparse(self.login_url)
+        is_http = parsed_url.scheme == 'http'
+
+        if is_http and isinstance(self.csrf_protection, CSRFProtection):
+            # Check if there's a CSRF cookie that won't be sent due to 'secure' flag
+            csrf_cookie_name = self.csrf_protection.cookie_name
+            if csrf_cookie_name in self._session.cookies:
+                csrf_cookie_value = self._session.cookies.get(csrf_cookie_name)
+                # Manually add Cookie header for HTTP requests to localhost
+                if headers is None:
+                    headers = {}
+                if 'Cookie' not in headers:
+                    headers['Cookie'] = f'{csrf_cookie_name}={csrf_cookie_value}'
 
         try:
             if self.content_type == "form":
@@ -217,11 +237,19 @@ class CookieJWTAuth(Authentication):
         """
         Return headers for API mode. If CSRF protection is configured,
         includes the CSRF token header for subsequent requests.
+
+        Also includes Cookie header for HTTP requests when cookies have the
+        'secure' flag (which prevents requests library from sending them over HTTP).
         """
+        # Ensure we're authenticated first (triggers login if needed)
+        if not self.token:
+            self._login_and_get_token()
+
         headers = {}
 
         # Import here to avoid circular imports
         from ..core.csrf import CSRFProtection
+        from urllib.parse import urlparse
 
         # If CSRF protection is configured, inject CSRF header
         if isinstance(self.csrf_protection, CSRFProtection):
@@ -237,6 +265,29 @@ class CookieJWTAuth(Authentication):
                 )
                 if headers_with_csrf:
                     headers = headers_with_csrf
+
+            # Workaround: For HTTP requests, manually add CSRF cookie to Cookie header
+            # since requests.Session won't send cookies marked 'secure' over HTTP
+            parsed_url = urlparse(self.login_url)
+            is_http = parsed_url.scheme == 'http'
+            if is_http and self._session:
+                # Build a list of cookies to include
+                cookies_to_send = []
+
+                # Add CSRF cookie
+                csrf_cookie_name = self.csrf_protection.cookie_name
+                if csrf_cookie_name in self._session.cookies:
+                    csrf_cookie_value = self._session.cookies.get(csrf_cookie_name)
+                    cookies_to_send.append(f'{csrf_cookie_name}={csrf_cookie_value}')
+
+                # Add JWT cookie (stellarbridge or whatever cookie_name is configured)
+                if self.cookie_name in self._session.cookies:
+                    jwt_cookie_value = self._session.cookies.get(self.cookie_name)
+                    cookies_to_send.append(f'{self.cookie_name}={jwt_cookie_value}')
+
+                # Set the Cookie header with all cookies
+                if cookies_to_send:
+                    headers['Cookie'] = '; '.join(cookies_to_send)
 
         return headers
 
