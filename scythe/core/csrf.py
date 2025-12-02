@@ -246,6 +246,11 @@ class CSRFProtection:
             response = session.get(url, timeout=10)
             response.raise_for_status()
 
+            # Store ALL response cookies in context for Secure cookie workaround
+            # This is needed when cookies have Secure flag but we're testing over HTTP
+            if context is not None and response.cookies:
+                context['initial_response_cookies'] = dict(response.cookies)
+
             # Extract token from refresh response
             token = self.extract_token(response=response, session=session, context=context)
 

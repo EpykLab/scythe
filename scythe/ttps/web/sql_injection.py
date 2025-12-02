@@ -134,7 +134,7 @@ class InputFieldInjector(TTP):
             headers, body = csrf_protection.inject_token(
                 headers=headers,
                 data=body,
-                method='POST',
+                method=self.http_method,
                 context=context
             )
 
@@ -153,12 +153,23 @@ class InputFieldInjector(TTP):
             # Workaround for CSRF cookies with 'secure' flag over HTTP:
             # requests.Session won't send cookies marked as 'secure' over HTTP connections,
             # even for localhost. Browsers are lenient for localhost, but requests is strict.
-            # To support local development, we manually add the Cookie header.
-            csrf_cookie_name = csrf_protection.cookie_name
-            if csrf_cookie_name in session.cookies:
-                csrf_cookie_value = session.cookies.get(csrf_cookie_name)
-                if 'Cookie' not in headers:
-                    headers['Cookie'] = f'{csrf_cookie_name}={csrf_cookie_value}'
+            # To support local development, we manually add ALL cookies to the Cookie header.
+            if 'Cookie' not in headers:
+                cookies_to_send = []
+
+                # First, try to use cookies from session (will work if no Secure flag issue)
+                for cookie_name, cookie_value in session.cookies.items():
+                    cookies_to_send.append(f'{cookie_name}={cookie_value}')
+
+                # If no cookies in session, use stored cookies from initial response
+                # This handles the Secure flag over HTTP scenario
+                if not cookies_to_send:
+                    initial_cookies = context.get('initial_response_cookies', {})
+                    for cookie_name, cookie_value in initial_cookies.items():
+                        cookies_to_send.append(f'{cookie_name}={cookie_value}')
+
+                if cookies_to_send:
+                    headers['Cookie'] = '; '.join(cookies_to_send)
 
         # Honor rate limiting
         import time
