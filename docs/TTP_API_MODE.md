@@ -83,21 +83,11 @@ ttp = InputFieldInjector(
 **API Mode Configuration:**
 ```python
 
-# We must be sure to pass an entire valid form to the api.
-# If we do not, the API is likely to throw and Unprocessible
-# entity or some other kind of error which will cause false
-# results...eg if you are expecting the test to fail, and DO
-# NOT pass and entire valid form the test will fail, but it
-# will fail due to missing form fields not because a server
-# side protection was functioning correctly
 full_form = {
     'first_name': 'something',
     'last_name': 'something else',
     'email': 'something@something.com',
-    # In this example, we will try in SQL inject into the
-    # phone field of this form. We will not add that here,
-    # instead, this field is define in the injection_field
-    # parameter
+    'phone': '123-456-7890' # we will inject into this field but need to set a default value
 }
 
 
@@ -106,7 +96,7 @@ ttp = InputFieldInjector(
     payload_generator=sql_payloads,
     execution_mode='api',
     api_endpoint='/api/search',
-    injection_field='phone',  # JSON field to inject into
+    injection_field='phone',  # scythe will update this form field with the sql injection at runtime
     http_method='POST',  # or 'GET', 'PUT', etc.
     inject_full_form_payload: full_form,
 

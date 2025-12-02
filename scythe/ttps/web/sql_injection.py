@@ -26,7 +26,7 @@ class InputFieldInjector(TTP):
                  execution_mode: str = 'ui',
                  api_endpoint: Optional[str] = None,
                  injection_field: str = 'query',
-                 inject_full_form_payload: dict = {},
+                 full_form_payload: dict = {},
                  http_method: str = 'POST',
                  csrf_protection=None):
         """
@@ -40,7 +40,7 @@ class InputFieldInjector(TTP):
             expected_result: Whether we expect to find SQL injection vulnerabilities
             authentication: Optional authentication
             execution_mode: 'ui' or 'api'
-            inject_full_form_payload: {} payload the defines entire JSON form for API mode (minus the injection_field string).
+            full_form_payload: {} payload the defines entire JSON form for API mode.
             api_endpoint: API endpoint path (API mode, e.g., '/api/search')
             injection_field: Field name to inject SQL payload into (API mode)
             http_method: HTTP method to use (API mode) - 'POST' or 'GET'
@@ -65,7 +65,7 @@ class InputFieldInjector(TTP):
         self.api_endpoint = api_endpoint
         self.injection_field = injection_field
         self.http_method = http_method.upper()
-        self.inject_full_form_payload = inject_full_form_payload
+        self.full_form_payload = full_form_payload
 
     def get_payloads(self):
         """yields queries from the configured generator"""
@@ -119,8 +119,10 @@ class InputFieldInjector(TTP):
         
         url = urljoin(base_url, self.api_endpoint or '/search')
 
-        body = self.inject_full_form_payload[self.injection_field] = payload
-        
+        injectable = {self.injection_field: payload}
+        body = self.full_form_payload
+        body.update(injectable)
+                
         # Merge auth headers from context
         headers = {}
         auth_headers = context.get('auth_headers', {})
