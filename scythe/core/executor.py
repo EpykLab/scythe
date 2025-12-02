@@ -210,10 +210,25 @@ class TTPExecutor:
                     self.logger.warning(f"Failed to get auth headers: {e}")
 
             # Initialize CSRF protection if configured
-            if getattr(self.ttp, 'csrf_protection', None):
-                context['csrf_protection'] = self.ttp.csrf_protection
-                self.logger.info(f"CSRF protection enabled: {self.ttp.csrf_protection}")
-            
+            csrf_protection = getattr(self.ttp, 'csrf_protection', None)
+            if csrf_protection:
+                context['csrf_protection'] = csrf_protection
+                self.logger.info(f"CSRF protection enabled: {csrf_protection}")
+
+                # If no authentication was used, we need to make an initial request
+                # to extract the CSRF token. Auth would have already done this.
+                if not self.ttp.requires_authentication():
+                    self.logger.info("No authentication configured, extracting initial CSRF token...")
+                    try:
+                        csrf_protection.refresh_token(session, self.target_url, context)
+                        token = csrf_protection.get_token(context)
+                        if token:
+                            self.logger.info(f"Successfully extracted initial CSRF token")
+                        else:
+                            self.logger.warning("Failed to extract initial CSRF token")
+                    except Exception as e:
+                        self.logger.warning(f"Error extracting initial CSRF token: {e}")
+
             consecutive_failures = 0
             
             for i, payload in enumerate(self.ttp.get_payloads(), 1):

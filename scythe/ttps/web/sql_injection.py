@@ -137,7 +137,29 @@ class InputFieldInjector(TTP):
                 method='POST',
                 context=context
             )
-        
+
+            # Add Origin and Referer headers for CSRF validation
+            # Many CSRF implementations check these headers in addition to tokens
+            from urllib.parse import urlparse
+            parsed_url = urlparse(url)
+            origin = f"{parsed_url.scheme}://{parsed_url.netloc}"
+            if headers is None:
+                headers = {}
+            if 'Origin' not in headers:
+                headers['Origin'] = origin
+            if 'Referer' not in headers:
+                headers['Referer'] = origin + '/'
+
+            # Workaround for CSRF cookies with 'secure' flag over HTTP:
+            # requests.Session won't send cookies marked as 'secure' over HTTP connections,
+            # even for localhost. Browsers are lenient for localhost, but requests is strict.
+            # To support local development, we manually add the Cookie header.
+            csrf_cookie_name = csrf_protection.cookie_name
+            if csrf_cookie_name in session.cookies:
+                csrf_cookie_value = session.cookies.get(csrf_cookie_name)
+                if 'Cookie' not in headers:
+                    headers['Cookie'] = f'{csrf_cookie_name}={csrf_cookie_value}'
+
         # Honor rate limiting
         import time
         resume_at = context.get('rate_limit_resume_at')
@@ -151,11 +173,19 @@ class InputFieldInjector(TTP):
         if self.http_method == 'GET':
             # For GET, put payload in query params
             response = session.get(url, params={self.injection_field: payload}, headers=headers or None, timeout=10.0)
+
+            # Extract CSRF token from response if auto-extraction is enabled
+            if isinstance(csrf_protection, CSRFProtection) and csrf_protection.auto_extract:
+                csrf_protection.extract_token(response=response, session=session, context=context)
         else:
             # For POST/PUT/etc, put payload in JSON body
             body = body
             response = session.request(self.http_method, url, json=body, headers=headers or None, timeout=10.0)
-        
+
+            # Extract CSRF token from response if auto-extraction is enabled
+            if isinstance(csrf_protection, CSRFProtection) and csrf_protection.auto_extract:
+                csrf_protection.extract_token(response=response, session=session, context=context)
+
         # Handle rate limiting
         if response.status_code == 429:
             retry_after = response.headers.get('Retry-After', '1')
