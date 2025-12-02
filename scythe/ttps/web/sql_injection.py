@@ -129,7 +129,7 @@ class InputFieldInjector(TTP):
         if auth_headers:
             headers.update(auth_headers)
 
-        csrf_protection = context.get('csrf_protection')
+        csrf_protection = self.csrf_protection
         if isinstance(csrf_protection, CSRFProtection):
             headers, body = csrf_protection.inject_token(
                 headers=headers,
