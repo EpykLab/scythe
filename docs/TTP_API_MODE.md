@@ -98,7 +98,7 @@ ttp = InputFieldInjector(
     api_endpoint='/api/search',
     injection_field='phone',  # scythe will update this form field with the sql injection at runtime
     http_method='POST',  # or 'GET', 'PUT', etc.
-    inject_full_form_payload: full_form,
+    full_form_payload: full_form,
 
 )
 ```
