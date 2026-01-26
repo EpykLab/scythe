@@ -26,28 +26,36 @@ Scythe operates on the principle that robust systems must be tested under advers
 
 ## Key Capabilities
 
-### 🎯 **Comprehensive Testing Framework**
+### **Comprehensive Testing Framework**
 * **TTPs (Tactics, Techniques, Procedures)**: Security-focused testing with adversarial patterns
-* **Journeys**: Multi-step workflow testing for complex user scenarios
+  * **Login Brute-Force**: Test authentication security controls
+  * **SQL Injection**: Test input validation (form fields, URL parameters, path manipulation)
+  * **CSRF Validation**: Verify CSRF protection enforcement
+  * **Request Flooding**: Test DDoS resilience and rate limiting
+  * **UUID Guessing**: Test resource enumeration protections
+* **Dual Execution Modes**: UI mode (Selenium) and API mode (direct HTTP requests)
+* **Journeys**: Multi-step workflow testing for complex user scenarios (UI and API modes)
 * **Expected Results System**: Unit-testing-style validation with clear pass/fail criteria
 * **Behavior Patterns**: Human, machine, and stealth execution patterns
+* **Payload Generators**: Wordlist and static payload generation for testing
 * **Extensible Architecture**: Easy to add custom testing scenarios
 
-### 🔐 **Authentication & Session Management**
-* **Multiple Authentication Methods**: Basic auth, bearer tokens, custom mechanisms
+### **Authentication & Session Management**
+* **Multiple Authentication Methods**: Basic auth, bearer tokens, cookie-based JWT, custom mechanisms
 * **Pre-execution Authentication**: Automatic login before test execution
 * **Session State Management**: Maintain authentication across complex workflows
 * **Multi-user Simulation**: Different credentials for distributed testing
+* **CSRF Protection Support**: Automatic CSRF token extraction and injection for protected APIs
 
-### 🚀 **Scale & Distribution**
+### **Scale & Distribution**
 * **Concurrent Execution**: Run thousands of tests simultaneously
 * **Geographic Distribution**: Execute tests from multiple network locations
 * **Batch Processing**: Divide large test runs with intelligent retry logic
 * **Resource Management**: Efficient distribution of credentials and network resources
 * **Multiple Execution Strategies**: Sequential, parallel, and distributed patterns
 
-### 📊 **Professional Reporting**
-* **Clear Result Indicators**: ✓ Expected outcomes, ✗ Unexpected results
+### **Professional Reporting**
+* **Clear Result Indicators**: Expected and unexpected outcomes
 * **Comprehensive Logging**: Detailed execution tracking and analysis
 * **Version Detection**: Automatic extraction of X-SCYTHE-TARGET-VERSION headers
 * **Performance Metrics**: Timing, success rates, and resource utilization
@@ -57,12 +65,51 @@ Scythe operates on the principle that robust systems must be tested under advers
 
 ### Security Testing
 Validate security controls and detection capabilities:
+
+**Login Brute-Force Protection:**
 ```python
-# Test that brute force protection works
+from scythe.ttps.web.login_bruteforce import LoginBruteforceTTP
+from scythe.payloads.generators import WordlistPayloadGenerator
+
+# Test that brute-force protection works
 login_protection_test = LoginBruteforceTTP(
-    passwords=["password", "123456", "admin"],
+    payload_generator=WordlistPayloadGenerator("common_passwords.txt"),
+    username="admin",
+    api_endpoint="/api/login",
     expected_result=False,  # Security should prevent this
-    authentication=admin_auth
+    execution_mode='api'
+)
+```
+
+**CSRF Protection Validation:**
+```python
+from scythe.ttps.web.csrf_validation import CSRFValidationTTP
+from scythe.core.csrf import CSRFProtection
+
+csrf = CSRFProtection(cookie_name='csrftoken', header_name='X-CSRFToken')
+csrf_test = CSRFValidationTTP(
+    target_endpoints=['/api/users', '/api/posts'],
+    http_method='POST',
+    csrf_protection=csrf,
+    expected_result=True  # Expect CSRF to be enforced
+)
+```
+
+**SQL Injection Protection:**
+```python
+from scythe.ttps.web.sql_injection import InputFieldInjector
+from scythe.payloads.generators import StaticPayloadGenerator
+
+sql_payloads = StaticPayloadGenerator([
+    "' OR '1'='1",
+    "'; DROP TABLE users--"
+])
+sql_test = InputFieldInjector(
+    field_selector="#search",
+    submit_selector="#submit",
+    payload_generator=sql_payloads,
+    expected_result=False,  # Should be prevented
+    execution_mode='ui'
 )
 ```
 
@@ -104,12 +151,106 @@ global_test = DistributedOrchestrator(
 
 ### Edge Case Testing
 Explore boundary conditions and unusual scenarios:
+
+**SQL Injection Testing:**
 ```python
-# Test file upload limits and edge cases
-file_upload_ttp = FileUploadTTP(
-    files=["large_file.zip", "empty.txt", "special_chars_名前.pdf"],
-    expected_result=True,  # Should handle various file types
-    size_limits_test=True
+from scythe.ttps.web.sql_injection import InputFieldInjector, URLManipulation
+from scythe.payloads.generators import StaticPayloadGenerator
+
+# Test form input fields
+sql_payloads = StaticPayloadGenerator([
+    "' OR '1'='1",
+    "'; DROP TABLE users--",
+    "1' UNION SELECT * FROM users--"
+])
+
+form_sql_test = InputFieldInjector(
+    field_selector="#search",
+    submit_selector="#submit",
+    payload_generator=sql_payloads,
+    expected_result=False,  # Should be prevented
+    execution_mode='ui'
+)
+
+# Test URL parameters (API mode)
+url_sql_test = URLManipulation(
+    payload_generator=sql_payloads,
+    api_endpoint="/api/search",
+    http_method="GET",
+    expected_result=False,
+    execution_mode='api'
+)
+```
+
+**Request Flooding / DDoS Testing:**
+```python
+from scythe.ttps.web.request_flooding import RequestFloodingTTP
+
+# Test rate limiting and DDoS resilience
+flooding_test = RequestFloodingTTP(
+    target_endpoints=["/api/search", "/api/users"],
+    request_count=1000,
+    requests_per_second=50.0,
+    attack_pattern="volume",  # or 'slowloris', 'burst', 'resource_exhaustion'
+    concurrent_threads=10,
+    expected_result=False,  # Expect rate limiting to kick in
+    execution_mode='api'
+)
+
+executor = TTPExecutor(ttp=flooding_test, target_url="http://app.com")
+executor.run()
+
+# Get detailed attack summary
+summary = flooding_test.get_attack_summary()
+print(f"Success rate: {summary['success_rate']:.1f}%")
+print(f"Rate limit rate: {summary['rate_limit_rate']:.1f}%")
+print(f"Defense assessment: {summary['defense_assessment']}")
+```
+
+**CSRF Validation Testing:**
+```python
+from scythe.ttps.web.csrf_validation import CSRFValidationTTP
+from scythe.core.csrf import CSRFProtection
+
+csrf = CSRFProtection(
+    cookie_name='csrftoken',
+    header_name='X-CSRFToken'
+)
+
+# Validate CSRF protection is enforced
+csrf_validation = CSRFValidationTTP(
+    target_endpoints=['/api/users', '/api/posts', '/api/delete'],
+    http_method='POST',
+    test_payload={'action': 'delete'},
+    csrf_protection=csrf,
+    expected_result=True  # Expect CSRF to be enforced
+)
+
+executor = TTPExecutor(ttp=csrf_validation, target_url="http://app.com")
+executor.run()
+
+# Get validation summary
+summary = csrf_validation.get_validation_summary()
+print(f"Endpoints protected: {summary['endpoints_protected']}")
+print(f"Overall result: {summary['overall_result']}")
+```
+
+**UUID Guessing:**
+```python
+from scythe.ttps.web.uuid_guessing import GuessUUIDInURL
+from scythe.payloads.generators import StaticPayloadGenerator
+from uuid import uuid4
+
+# Generate UUID payloads
+uuid_payloads = StaticPayloadGenerator([
+    str(uuid4()) for _ in range(100)  # Generate 100 random UUIDs
+])
+
+uuid_test = GuessUUIDInURL(
+    target_url="http://app.com",
+    uri_root_path="/api/resource/",
+    payload_generator=uuid_payloads,
+    expected_result=False  # Should not find valid resources
 )
 ```
 
@@ -124,7 +265,7 @@ file_upload_ttp = FileUploadTTP(
 
 #### If you would like to use as a library:
 
-setup the virtual environment
+Set up the virtual environment
 ```bash
 python3 -m venv venv
 
@@ -133,14 +274,14 @@ python3 -m venv venv
 # fish: source venv/bin/activate.fish
 ```
 
-install the package
+Install the package
 ```bash
 # in an activated venv
 
 pip3 install scythe-ttp
 ```
 
-#### If you would like like to contribute:
+#### If you would like to contribute:
 
 1. Clone the repository:
    ```bash
@@ -155,7 +296,7 @@ pip3 install scythe-ttp
 
 3. Verify installation:
    ```bash
-   python -c "from scythe.core.ttp import TTP; print('✅ Scythe installed successfully')"
+   python -c "from scythe.core.ttp import TTP; print('Scythe installed successfully')"
    ```
 
 ## Quick Start Examples
@@ -164,22 +305,56 @@ pip3 install scythe-ttp
 
 Test authentication controls with expected failure:
 
+**UI Mode (Selenium-based):**
 ```python
 from scythe.core.executor import TTPExecutor
 from scythe.ttps.web.login_bruteforce import LoginBruteforceTTP
+from scythe.payloads.generators import StaticPayloadGenerator
 
 # Create a security test expecting controls to work
 security_test = LoginBruteforceTTP(
+    payload_generator=StaticPayloadGenerator(["password", "123456", "admin"]),
     username="admin",
-    passwords=["password", "123456", "admin"],
     username_selector="#username",
     password_selector="#password",
     submit_selector="#submit",
-    expected_result=False  # We EXPECT security to prevent this
+    expected_result=False,  # We EXPECT security to prevent this
+    execution_mode='ui'  # Default: uses Selenium
 )
 
 executor = TTPExecutor(ttp=security_test, target_url="http://app.com/login")
 executor.run()
+print(f"Test passed: {executor.was_successful()}")
+```
+
+**API Mode (Direct HTTP requests):**
+```python
+from scythe.core.executor import TTPExecutor
+from scythe.ttps.web.login_bruteforce import LoginBruteforceTTP
+from scythe.payloads.generators import StaticPayloadGenerator
+from scythe.core.csrf import CSRFProtection
+
+# Configure CSRF protection for API mode
+csrf = CSRFProtection(
+    cookie_name='csrftoken',
+    header_name='X-CSRFToken'
+)
+
+# API mode test (faster, no browser overhead)
+api_test = LoginBruteforceTTP(
+    payload_generator=StaticPayloadGenerator(["password", "123456", "admin"]),
+    username="admin",
+    api_endpoint="/api/auth/login",
+    username_field="username",
+    password_field="password",
+    expected_result=False,
+    execution_mode='api',  # Direct HTTP requests
+    csrf_protection=csrf
+)
+
+executor = TTPExecutor(ttp=api_test, target_url="http://app.com")
+executor.run()
+exit_code = executor.exit_code()  # 0 if successful, 1 if failed
 ```
 
 ### 2. Multi-Step Workflow Testing
@@ -322,6 +497,8 @@ Test workflows requiring authentication:
 ```python
 from scythe.auth.basic import BasicAuth
 from scythe.auth.bearer import BearerTokenAuth
+from scythe.auth.cookie_jwt import CookieJWTAuth
+from scythe.core.csrf import CSRFProtection
 
 # Basic web application authentication
 web_auth = BasicAuth(
@@ -330,30 +507,197 @@ web_auth = BasicAuth(
     login_url="http://app.com/admin/login"
 )
 
-# API authentication for backend testing
+# API authentication with bearer token
 api_auth = BearerTokenAuth(
     token_url="http://api.app.com/auth/token",
     username="api_user",
     password="api_secret"
 )
 
+# Cookie-based JWT authentication (for APIs that use cookies instead of headers)
+csrf = CSRFProtection(cookie_name='csrftoken', header_name='X-CSRFToken')
+cookie_jwt_auth = CookieJWTAuth(
+    login_url="http://app.com/api/login",
+    username="user@example.com",
+    password="password123",
+    jwt_json_path="token",  # Path to JWT in JSON response
+    cookie_name="stellarbridge",  # Cookie name to set
+    csrf_protection=csrf
+)
+
 # Create authenticated security test
-admin_security_test = PrivilegeEscalationTTP(
-    target_paths=["/admin/users", "/admin/settings", "/admin/logs"],
+admin_security_test = LoginBruteforceTTP(
+    payload_generator=StaticPayloadGenerator(["weak1", "weak2"]),
+    username="admin",
     expected_result=False,  # Should be prevented by access controls
     authentication=web_auth
 )
+```
 
-# Create authenticated API stress test
-api_stress_test = APIEndpointTTP(
-    endpoints=["/api/users", "/api/reports", "/api/analytics"],
-    request_rate=100,  # 100 requests per second
-    expected_result=True,  # Should handle the load
-    authentication=api_auth
+### 6. API Mode Testing with Journeys
+
+Test REST APIs directly without browser automation:
+
+```python
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+from scythe.auth.bearer import BearerTokenAuth
+
+# Create API-focused journey
+api_journey = Journey(
+    name="API Security Test",
+    description="Test API endpoints for vulnerabilities"
 )
+
+# Step 1: Authenticate and test endpoints
+auth_step = Step("API Authentication", "Get bearer token")
+auth_step.add_action(ApiRequestAction(
+    method="POST",
+    url="http://api.app.com/auth/login",
+    body_json={"username": "test", "password": "test"},
+    expected_status=200,
+    response_model_context_key="auth_token"  # Store token in context
+))
+
+# Step 2: Test protected endpoint
+protected_step = Step("Test Protected Endpoint", "Access user data")
+protected_step.add_action(ApiRequestAction(
+    method="GET",
+    url="http://api.app.com/users/me",
+    headers={"Authorization": "Bearer {auth_token}"},  # Use token from context
+    expected_status=200
+))
+
+api_journey.add_step(auth_step)
+api_journey.add_step(protected_step)
+
+# Execute in API mode (no browser)
+executor = JourneyExecutor(
+    journey=api_journey,
+    target_url="http://api.app.com",
+    mode="API"  # Use API mode instead of UI mode
+)
+result = executor.run()
 ```
 
 ## Advanced Features
+
+### API Mode vs UI Mode
+
+Scythe supports two execution modes for TTPs and Journeys:
+
+**UI Mode (default)**: Uses Selenium WebDriver to interact with web pages
+- Best for: UI-specific tests, visual validation, client-side protections
+- Slower but more realistic user simulation
+
+**API Mode**: Makes direct HTTP requests to backend APIs
+- Best for: Backend security testing, rate limiting tests, CI/CD pipelines
+- Faster execution, no browser overhead
+- Supports CSRF protection, authentication headers, and session management
+
+```python
+# TTP with API mode
+ttp = LoginBruteforceTTP(
+    payload_generator=payload_gen,
+    username="admin",
+    api_endpoint="/api/login",
+    execution_mode='api'  # Use API mode
+)
+
+# Journey with API mode
+executor = JourneyExecutor(
+    journey=my_journey,
+    target_url="http://app.com",
+    mode="API"  # Execute journey in API mode
+)
+```
+
+### CSRF Protection
+
+Scythe provides comprehensive CSRF protection support for API mode testing:
+
+```python
+from scythe.core.csrf import CSRFProtection
+
+# Configure CSRF protection (supports Django, Laravel, Rails, Express, etc.)
+csrf = CSRFProtection(
+    extract_from='cookie',  # Where to extract token: 'cookie', 'header', or 'body'
+    cookie_name='csrftoken',  # Cookie name (Django default)
+    header_name='X-CSRFToken',  # Header name to send token in
+    inject_into='header',  # Where to inject: 'header' or 'body'
+    auto_extract=True,  # Automatically extract from responses
+    retry_on_failure=True  # Retry on 403/419 errors
+)
+
+# Use with TTPs
+ttp = LoginBruteforceTTP(
+    payload_generator=payload_gen,
+    username="admin",
+    api_endpoint="/api/login",
+    execution_mode='api',
+    csrf_protection=csrf  # Enable CSRF handling
+)
+
+# Use with CookieJWTAuth
+auth = CookieJWTAuth(
+    login_url="http://app.com/api/login",
+    username="user",
+    password="pass",
+    csrf_protection=csrf
+)
+```
+
+### Available TTPs
+
+Scythe includes several built-in TTPs for common security testing scenarios:
+
+**Login Brute-Force (`LoginBruteforceTTP`)**
+- Tests authentication security controls
+- Supports UI and API modes
+- Configurable success indicators
+
+**SQL Injection (`InputFieldInjector`, `URLManipulation`, `URLPathManipulation`)**
+- Tests input validation in forms, URL parameters, and path segments
+- Supports UI and API modes
+- Configurable payload generators
+
+**CSRF Validation (`CSRFValidationTTP`)**
+- Validates CSRF protection enforcement
+- API mode only
+- Tests requests with/without valid/invalid tokens
+
+**Request Flooding (`RequestFloodingTTP`)**
+- Tests DDoS resilience and rate limiting
+- Supports multiple attack patterns: volume, slowloris, burst, resource_exhaustion
+- UI and API modes supported
+
+**UUID Guessing (`GuessUUIDInURL`)**
+- Tests resource enumeration protections
+- Attempts to guess UUIDs in URL paths
+
+### Payload Generators
+
+Generate test payloads from various sources:
+
+```python
+from scythe.payloads.generators import StaticPayloadGenerator, WordlistPayloadGenerator
+
+# Static list of payloads
+static_gen = StaticPayloadGenerator([
+    "admin", "password", "123456"
+])
+
+# Load from file (one payload per line)
+wordlist_gen = WordlistPayloadGenerator("passwords.txt")
+
+# Use with TTPs
+ttp = LoginBruteforceTTP(
+    payload_generator=wordlist_gen,
+    username="admin",
+    execution_mode='api'
+)
+```
 
 ### Expected Results System
 
@@ -374,10 +718,26 @@ performance_ttp = LoadTestTTP(
 ```
 
 **Output Examples:**
-- ✓ **Expected Success**: System handled load as expected
-- ✗ **Unexpected Success**: Security vulnerability found (should have been blocked)
-- ✓ **Expected Failure**: Security controls working properly
-- ✗ **Unexpected Failure**: System failed under expected normal load
+- **Expected Success**: System handled load as expected
+- **Unexpected Success**: Security vulnerability found (should have been blocked)
+- **Expected Failure**: Security controls working properly
+- **Unexpected Failure**: System failed under expected normal load
+
+**Exit Codes and Result Validation:**
+```python
+executor = TTPExecutor(ttp=my_test, target_url="http://app.com")
+executor.run()
+
+# Check if test passed (all results matched expectations)
+if executor.was_successful():
+    print("All tests passed!")
+else:
+    print("Some tests failed!")
+
+# Get exit code (0 = success, 1 = failure)
+exit_code = executor.exit_code()
+sys.exit(exit_code)
+```
 
 ### Behavior Patterns
 
@@ -417,6 +777,44 @@ executor = TTPExecutor(
 )
 ```
 
+### Journey Actions
+
+Journeys support various action types for building complex workflows:
+
+**UI Mode Actions:**
+- `NavigateAction`: Navigate to URLs
+- `ClickAction`: Click elements (supports CSS, XPath, ID, name, class, tag selectors)
+- `FillFormAction`: Fill form fields
+- `WaitAction`: Wait for conditions (elements, time, URLs)
+- `AssertAction`: Validate state (URLs, element text, page content)
+- `TTPAction`: Execute TTPs within journeys
+
+**API Mode Actions:**
+- `ApiRequestAction`: Make REST API requests (GET, POST, PUT, DELETE, etc.)
+  - Supports JSON/form data
+  - Automatic auth header injection
+  - Pydantic response validation
+  - Rate limit handling
+- `TTPAction`: Execute TTPs in API mode
+
+```python
+from scythe.journeys.actions import ApiRequestAction, NavigateAction, FillFormAction
+
+# API request action
+api_action = ApiRequestAction(
+    method="POST",
+    url="/api/users",
+    body_json={"name": "Test User", "email": "test@example.com"},
+    expected_status=201,
+    response_model=UserModel,  # Optional Pydantic validation
+    response_model_context_key="created_user"  # Store in context
+)
+
+# UI actions work in UI mode
+ui_action = NavigateAction(url="http://app.com/login")
+form_action = FillFormAction(field_data={"#email": "user@example.com"})
+```
+
 ### Version Detection
 
 Scythe automatically captures the `X-SCYTHE-TARGET-VERSION` header from HTTP responses to track which version of your web application is being tested:
@@ -447,7 +845,7 @@ executor.run()
 
 **Output includes version information:**
 ```
-✓ EXPECTED SUCCESS: 'test_payload' | Version: 1.3.2
+EXPECTED SUCCESS: 'test_payload' | Version: 1.3.2
 Target Version Summary:
   Results with version info: 1/1
   Version 1.3.2: 1 result(s)
@@ -489,10 +887,13 @@ This feature helps you:
 
 Extend Scythe for specific testing needs:
 
+**Creating Custom TTPs:**
+
 ```python
 from scythe.core.ttp import TTP
 from scythe.journeys.base import Action
-from typing import Generator, Any
+from typing import Generator, Any, Dict
+import requests
 
 class CustomBusinessLogicTTP(TTP):
     """Test specific business logic under adverse conditions."""
@@ -501,7 +902,8 @@ class CustomBusinessLogicTTP(TTP):
         super().__init__(
             name="Business Logic Test",
             description="Test business logic edge cases",
-            expected_result=expected_result
+            expected_result=expected_result,
+            execution_mode='api'  # Or 'ui'
         )
         self.scenarios = business_scenarios
 
@@ -510,14 +912,27 @@ class CustomBusinessLogicTTP(TTP):
             yield scenario
 
     def execute_step(self, driver, payload):
-        # Implement your specific business logic testing
-        # This could involve API calls, database interactions, etc.
-        pass
+        # UI mode implementation
+        driver.get(f"http://app.com/test?scenario={payload}")
+        # ... UI interactions ...
+
+    def execute_step_api(self, session: requests.Session, payload: Any, context: Dict[str, Any]) -> requests.Response:
+        # API mode implementation
+        url = context.get('target_url', '') + f"/api/test?scenario={payload}"
+        return session.get(url)
 
     def verify_result(self, driver) -> bool:
-        # Verify the business logic behaved correctly
-        return self.check_business_rules(driver)
+        # UI mode verification
+        return "success" in driver.page_source
 
+    def verify_result_api(self, response: requests.Response, context: Dict[str, Any]) -> bool:
+        # API mode verification
+        return response.status_code == 200 and "success" in response.text
+```
+
+**Creating Custom Journey Actions:**
+
+```python
 class CustomWorkflowAction(Action):
     """Custom action for specific workflow steps."""
 
@@ -528,7 +943,18 @@ class CustomWorkflowAction(Action):
 
     def execute(self, driver, context):
         # Implement custom workflow logic
-        return self.perform_workflow_step(driver, context)
+        # Can work with both UI (driver) and API (context['requests_session']) modes
+        mode = context.get('mode', 'UI')
+        if mode == 'API':
+            session = context.get('requests_session')
+            # Make API call
+            response = session.post(f"/api/{self.workflow_step}", json=self.parameters)
+            context[f"{self.workflow_step}_result"] = response.json()
+            return response.status_code == 200
+        else:
+            # UI mode logic
+            driver.get(f"http://app.com/{self.workflow_step}")
+            return True
 ```
 
 ## Testing Scenarios
