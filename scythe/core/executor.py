@@ -8,25 +8,26 @@ from ..behaviors.base import Behavior
 from .headers import HeaderExtractor
 import requests
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('ttp_test.log'),
-        logging.StreamHandler()
-    ]
-)
 
 class TTPExecutor:
     """
     The main engine for running TTP tests.
     """
-    def __init__(self, ttp: TTP, target_url: str, headless: bool = True, delay: int = 1, behavior: Optional[Behavior] = None):
+
+    def __init__(
+        self,
+        ttp: TTP,
+        target_url: str,
+        headless: bool = True,
+        delay: int = 1,
+        behavior: Optional[Behavior] = None,
+        sleep_fn=None,
+    ):
         self.ttp = ttp
         self.target_url = target_url
         self.delay = delay
         self.behavior = behavior
+        self._sleep_fn = sleep_fn or time.sleep
         self.logger = logging.getLogger(self.ttp.name)
 
         self.chrome_options = Options()
@@ -56,13 +57,13 @@ class TTPExecutor:
         """Executes the full TTP test flow."""
         self.logger.info(f"Starting TTP: '{self.ttp.name}' on {self.target_url}")
         self.logger.info(f"Description: {self.ttp.description}")
-        
+
         if self.behavior:
             self.logger.info(f"Using behavior: {self.behavior.name}")
             self.logger.info(f"Behavior description: {self.behavior.description}")
 
         # Check execution mode
-        if self.ttp.execution_mode == 'api':
+        if self.ttp.execution_mode == "api":
             self.logger.info("Execution mode: API")
             self._run_api_mode()
             return
@@ -70,14 +71,18 @@ class TTPExecutor:
             self.logger.info("Execution mode: UI")
             self._setup_driver()
             self._run_ui_mode()
-    
+
     def _run_ui_mode(self):
         """Execute TTP in UI mode using Selenium."""
 
         try:
             # Handle authentication if required
             if self.ttp.requires_authentication():
-                auth_name = self.ttp.authentication.name if self.ttp.authentication else "Unknown"
+                auth_name = (
+                    self.ttp.authentication.name
+                    if self.ttp.authentication
+                    else "Unknown"
+                )
                 self.logger.info(f"Authentication required for TTP: {auth_name}")
                 if self.driver:
                     auth_success = self.ttp.authenticate(self.driver, self.target_url)
@@ -94,13 +99,15 @@ class TTPExecutor:
                 self.behavior.pre_execution(self.driver, self.target_url)
 
             consecutive_failures = 0
-            
+
             for i, payload in enumerate(self.ttp.get_payloads(), 1):
                 # Check if behavior wants to continue
-                if self.behavior and not self.behavior.should_continue(i, consecutive_failures):
+                if self.behavior and not self.behavior.should_continue(
+                    i, consecutive_failures
+                ):
                     self.logger.info("Behavior requested to stop execution")
                     break
-                
+
                 self.logger.info(f"Attempt {i}: Executing with payload -> '{payload}'")
 
                 # Pre-step behavior
@@ -117,41 +124,63 @@ class TTPExecutor:
                         step_delay = self.behavior.get_step_delay(i)
                     else:
                         step_delay = self.delay
-                    
-                    time.sleep(step_delay)
 
-                    success = self.ttp.verify_result(self.driver) if self.driver else False
-                    
+                    self._sleep_fn(step_delay)
+
+                    success = (
+                        self.ttp.verify_result(self.driver) if self.driver else False
+                    )
+
                     # Compare actual result with expected result
                     if success:
                         consecutive_failures = 0
-                        current_url = self.driver.current_url if self.driver else "unknown"
-                        
+                        current_url = (
+                            self.driver.current_url if self.driver else "unknown"
+                        )
+
                         # Extract target version header
                         target_version = None
                         if self.driver:
-                            target_version = self.header_extractor.extract_target_version(self.driver, self.target_url)
-                        
+                            target_version = (
+                                self.header_extractor.extract_target_version(
+                                    self.driver, self.target_url
+                                )
+                            )
+
                         result_entry = {
-                            'payload': payload, 
-                            'url': current_url, 
-                            'expected': self.ttp.expected_result, 
-                            'actual': True,
-                            'target_version': target_version
+                            "payload": payload,
+                            "url": current_url,
+                            "expected": self.ttp.expected_result,
+                            "actual": True,
+                            "target_version": target_version,
                         }
                         self.results.append(result_entry)
-                        
+
                         if self.ttp.expected_result:
-                            version_info = f" | Version: {target_version}" if target_version else ""
-                            self.logger.info(f"EXPECTED SUCCESS: '{payload}'{version_info}")
+                            version_info = (
+                                f" | Version: {target_version}"
+                                if target_version
+                                else ""
+                            )
+                            self.logger.info(
+                                f"EXPECTED SUCCESS: '{payload}'{version_info}"
+                            )
                         else:
-                            version_info = f" | Version: {target_version}" if target_version else ""
-                            self.logger.warning(f"UNEXPECTED SUCCESS: '{payload}' (expected to fail){version_info}")
+                            version_info = (
+                                f" | Version: {target_version}"
+                                if target_version
+                                else ""
+                            )
+                            self.logger.warning(
+                                f"UNEXPECTED SUCCESS: '{payload}' (expected to fail){version_info}"
+                            )
                             self.has_test_failures = True  # Mark as failure when result differs from expected
                     else:
                         consecutive_failures += 1
                         if self.ttp.expected_result:
-                            self.logger.info(f"EXPECTED FAILURE: '{payload}' (security control working)")
+                            self.logger.info(
+                                f"EXPECTED FAILURE: '{payload}' (security control working)"
+                            )
                             self.has_test_failures = True  # Mark as failure when result differs from expected
                         else:
                             self.logger.info(f"EXPECTED FAILURE: '{payload}'")
@@ -163,7 +192,7 @@ class TTPExecutor:
                 except Exception as step_error:
                     consecutive_failures += 1
                     self.logger.error(f"Error during step {i}: {step_error}")
-                    
+
                     # Let behavior handle the error
                     if self.behavior:
                         if not self.behavior.on_error(step_error, i):
@@ -188,107 +217,135 @@ class TTPExecutor:
         """Execute TTP in API mode using requests."""
         session = requests.Session()
         context: Dict[str, Any] = {
-            'target_url': self.target_url,
-            'auth_headers': {},
-            'rate_limit_resume_at': None
+            "target_url": self.target_url,
+            "auth_headers": {},
+            "rate_limit_resume_at": None,
         }
 
         try:
             # Handle authentication if required (API mode)
             if self.ttp.requires_authentication():
-                auth_name = self.ttp.authentication.name if self.ttp.authentication else "Unknown"
+                auth_name = (
+                    self.ttp.authentication.name
+                    if self.ttp.authentication
+                    else "Unknown"
+                )
                 self.logger.info(f"Authentication required for TTP: {auth_name}")
 
                 # Try to get auth headers directly
                 try:
-                    if hasattr(self.ttp.authentication, 'get_auth_headers'):
+                    if hasattr(self.ttp.authentication, "get_auth_headers"):
                         auth_headers = self.ttp.authentication.get_auth_headers() or {}
-                        context['auth_headers'] = auth_headers
+                        context["auth_headers"] = auth_headers
                         session.headers.update(auth_headers)
                         self.logger.info("Authentication headers applied")
                 except Exception as e:
                     self.logger.warning(f"Failed to get auth headers: {e}")
 
             # Initialize CSRF protection if configured
-            csrf_protection = getattr(self.ttp, 'csrf_protection', None)
+            csrf_protection = getattr(self.ttp, "csrf_protection", None)
             if csrf_protection:
-                context['csrf_protection'] = csrf_protection
+                context["csrf_protection"] = csrf_protection
                 self.logger.info(f"CSRF protection enabled: {csrf_protection}")
 
                 # If no authentication was used, we need to make an initial request
                 # to extract the CSRF token. Auth would have already done this.
                 if not self.ttp.requires_authentication():
-                    self.logger.info("No authentication configured, extracting initial CSRF token...")
+                    self.logger.info(
+                        "No authentication configured, extracting initial CSRF token..."
+                    )
                     try:
                         csrf_protection.refresh_token(session, self.target_url, context)
                         token = csrf_protection.get_token(context)
                         if token:
-                            self.logger.info(f"Successfully extracted initial CSRF token")
+                            self.logger.info(
+                                f"Successfully extracted initial CSRF token"
+                            )
                         else:
                             self.logger.warning("Failed to extract initial CSRF token")
                     except Exception as e:
                         self.logger.warning(f"Error extracting initial CSRF token: {e}")
 
             consecutive_failures = 0
-            
+
             for i, payload in enumerate(self.ttp.get_payloads(), 1):
                 # Check if behavior wants to continue
-                if self.behavior and not self.behavior.should_continue(i, consecutive_failures):
+                if self.behavior and not self.behavior.should_continue(
+                    i, consecutive_failures
+                ):
                     self.logger.info("Behavior requested to stop execution")
                     break
-                
+
                 self.logger.info(f"Attempt {i}: Executing with payload -> '{payload}'")
-                
+
                 try:
                     # Execute API request
                     response = self.ttp.execute_step_api(session, payload, context)
-                    
+
                     # Use behavior delay if available, otherwise use default
                     if self.behavior:
                         step_delay = self.behavior.get_step_delay(i)
                     else:
                         step_delay = self.delay
-                    
-                    time.sleep(step_delay)
-                    
+
+                    self._sleep_fn(step_delay)
+
                     # Verify result
                     success = self.ttp.verify_result_api(response, context)
-                    
+
                     # Compare actual result with expected result
                     if success:
                         consecutive_failures = 0
-                        
+
                         # Extract target version from response headers
-                        target_version = response.headers.get('X-SCYTHE-TARGET-VERSION') or response.headers.get('x-scythe-target-version')
-                        
+                        target_version = response.headers.get(
+                            "X-SCYTHE-TARGET-VERSION"
+                        ) or response.headers.get("x-scythe-target-version")
+
                         result_entry = {
-                            'payload': payload,
-                            'url': response.url if hasattr(response, 'url') else self.target_url,
-                            'expected': self.ttp.expected_result,
-                            'actual': True,
-                            'target_version': target_version
+                            "payload": payload,
+                            "url": response.url
+                            if hasattr(response, "url")
+                            else self.target_url,
+                            "expected": self.ttp.expected_result,
+                            "actual": True,
+                            "target_version": target_version,
                         }
                         self.results.append(result_entry)
-                        
+
                         if self.ttp.expected_result:
-                            version_info = f" | Version: {target_version}" if target_version else ""
-                            self.logger.info(f"EXPECTED SUCCESS: '{payload}'{version_info}")
+                            version_info = (
+                                f" | Version: {target_version}"
+                                if target_version
+                                else ""
+                            )
+                            self.logger.info(
+                                f"EXPECTED SUCCESS: '{payload}'{version_info}"
+                            )
                         else:
-                            version_info = f" | Version: {target_version}" if target_version else ""
-                            self.logger.warning(f"UNEXPECTED SUCCESS: '{payload}' (expected to fail){version_info}")
+                            version_info = (
+                                f" | Version: {target_version}"
+                                if target_version
+                                else ""
+                            )
+                            self.logger.warning(
+                                f"UNEXPECTED SUCCESS: '{payload}' (expected to fail){version_info}"
+                            )
                             self.has_test_failures = True
                     else:
                         consecutive_failures += 1
                         if self.ttp.expected_result:
-                            self.logger.info(f"EXPECTED FAILURE: '{payload}' (security control working)")
+                            self.logger.info(
+                                f"EXPECTED FAILURE: '{payload}' (security control working)"
+                            )
                             self.has_test_failures = True
                         else:
                             self.logger.info(f"EXPECTED FAILURE: '{payload}'")
-                
+
                 except Exception as step_error:
                     consecutive_failures += 1
                     self.logger.error(f"Error during step {i}: {step_error}")
-                    
+
                     # Let behavior handle the error
                     if self.behavior:
                         if not self.behavior.on_error(step_error, i):
@@ -297,7 +354,7 @@ class TTPExecutor:
                     else:
                         # Default behavior: continue on most errors
                         continue
-        
+
         except KeyboardInterrupt:
             self.logger.info("Test interrupted by user.")
         except Exception as e:
@@ -305,70 +362,98 @@ class TTPExecutor:
         finally:
             session.close()
             self._cleanup()
-    
+
     def _cleanup(self):
         """Closes the WebDriver and prints a summary."""
         if self.driver:
             self.driver.quit()
 
-        self.logger.info("\n" + "="*50)
+        self.logger.info("\n" + "=" * 50)
         self.logger.info(f"TTP SUMMARY: {self.ttp.name}")
-        self.logger.info("="*50)
+        self.logger.info("=" * 50)
 
         if self.results:
-            expected_successes = [r for r in self.results if r['expected'] and r['actual']]
-            unexpected_successes = [r for r in self.results if not r['expected'] and r['actual']]
-            
+            expected_successes = [
+                r for r in self.results if r["expected"] and r["actual"]
+            ]
+            unexpected_successes = [
+                r for r in self.results if not r["expected"] and r["actual"]
+            ]
+
             self.logger.info(f"Total results: {len(self.results)}")
-            
+
             if expected_successes:
                 self.logger.info(f"Expected successes: {len(expected_successes)}")
                 for result in expected_successes:
-                    version_info = f" | Version: {result['target_version']}" if result.get('target_version') else ""
-                    self.logger.info(f"  ✓ Payload: {result['payload']} | URL: {result['url']}{version_info}")
-            
+                    version_info = (
+                        f" | Version: {result['target_version']}"
+                        if result.get("target_version")
+                        else ""
+                    )
+                    self.logger.info(
+                        f"  ✓ Payload: {result['payload']} | URL: {result['url']}{version_info}"
+                    )
+
             if unexpected_successes:
-                self.logger.warning(f"Unexpected successes: {len(unexpected_successes)}")
+                self.logger.warning(
+                    f"Unexpected successes: {len(unexpected_successes)}"
+                )
                 for result in unexpected_successes:
-                    version_info = f" | Version: {result['target_version']}" if result.get('target_version') else ""
-                    self.logger.warning(f"  ✗ Payload: {result['payload']} | URL: {result['url']}{version_info}")
-            
+                    version_info = (
+                        f" | Version: {result['target_version']}"
+                        if result.get("target_version")
+                        else ""
+                    )
+                    self.logger.warning(
+                        f"  ✗ Payload: {result['payload']} | URL: {result['url']}{version_info}"
+                    )
+
             # Display version summary
             version_summary = self.header_extractor.get_version_summary(self.results)
-            if version_summary['results_with_version'] > 0:
+            if version_summary["results_with_version"] > 0:
                 self.logger.info("\nTarget Version Summary:")
-                self.logger.info(f"  Results with version info: {version_summary['results_with_version']}/{version_summary['total_results']}")
-                if version_summary['unique_versions']:
-                    for version in version_summary['unique_versions']:
-                        count = version_summary['version_counts'][version]
+                self.logger.info(
+                    f"  Results with version info: {version_summary['results_with_version']}/{version_summary['total_results']}"
+                )
+                if version_summary["unique_versions"]:
+                    for version in version_summary["unique_versions"]:
+                        count = version_summary["version_counts"][version]
                         self.logger.info(f"  Version {version}: {count} result(s)")
             else:
-                self.logger.info("\nNo X-SCYTHE-TARGET-VERSION headers detected in responses.")
+                self.logger.info(
+                    "\nNo X-SCYTHE-TARGET-VERSION headers detected in responses."
+                )
         else:
             if self.ttp.expected_result:
-                self.logger.info("No successes detected (expected to find vulnerabilities).")
+                self.logger.info(
+                    "No successes detected (expected to find vulnerabilities)."
+                )
             else:
-                self.logger.info("No successes detected (security controls working as expected).")
-        
+                self.logger.info(
+                    "No successes detected (security controls working as expected)."
+                )
+
         # Log overall test status
         if self.has_test_failures:
-            self.logger.error("\n✗ TEST FAILED: One or more test results differed from expected")
+            self.logger.error(
+                "\n✗ TEST FAILED: One or more test results differed from expected"
+            )
         else:
             self.logger.info("\n✓ TEST PASSED: All test results matched expectations")
-    
+
     def was_successful(self) -> bool:
         """
         Check if all test results matched expectations.
-        
+
         Returns:
             True if all test results matched expectations, False otherwise
         """
         return not self.has_test_failures
-    
+
     def exit_code(self) -> int:
         """
         Get the exit code for this test execution.
-        
+
         Returns:
             0 if test was successful (results matched expectations), 1 otherwise
         """

@@ -163,11 +163,11 @@ journey.add_step(step)
 
 # Execute in API mode
 executor = JourneyExecutor(
-    journey,
+    journey=journey,
     target_url="http://example.com",
-    api_mode=True  # Enable API mode
+    mode="API"  # Enable API mode
 )
-result = executor.execute()
+result = executor.run()
 ```
 
 ## Rate Limiting in API Mode

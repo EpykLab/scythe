@@ -145,7 +145,7 @@ python my_first_ttp.py
 1. **Browser Opens**: Chrome opens and navigates to the target URL
 2. **Payload Testing**: Each password is tested against the login form
 3. **Result Verification**: Scythe checks if login was successful
-4. **Reporting**: Results are logged to console and `ttp_test.log`
+4. **Reporting**: Results are logged to console (and any handlers you configure)
 
 ## Understanding Results
 
@@ -161,9 +161,9 @@ python my_first_ttp.py
 2023-12-07 10:30:51 - Login Bruteforce - WARNING - SUCCESS: 'admin'
 ```
 
-### Log File
+### Log Capture
 
-Detailed logs are saved to `ttp_test.log` for later analysis.
+If you need file logs, configure Python logging in your runner (for example with a `FileHandler`).
 
 ### Result Types
 
@@ -511,10 +511,18 @@ sudo chmod +x /usr/bin/google-chrome
 
 ### Getting Help
 
-1. Check the logs in `ttp_test.log` for detailed error information
+1. Configure Python logging in your runner/test harness to capture detailed execution logs
 2. Use `headless=False` to see what's happening in the browser
 3. Add debug logging: `logging.getLogger().setLevel(logging.DEBUG)`
 4. Review the documentation for your specific use case
+
+### Deterministic Test Tips
+
+- For deterministic unit tests, inject no-op sleep hooks:
+  - `TTPExecutor(..., sleep_fn=lambda _seconds: None)`
+  - `JourneyExecutor(..., sleep_fn=lambda _seconds: None)`
+- In API-mode journeys, set `_time_fn` and `_sleep_fn` in journey context to control retries/backoff timing deterministically.
+- For request flooding tests, use `RequestFloodingTTP(..., rng_seed=<fixed-int>)` to get stable payload timing/user-agent sequences.
 
 You're now ready to start using Scythe for security testing! Begin with the simple examples above and gradually explore more advanced features as you become comfortable with the framework.
 
@@ -600,6 +608,45 @@ print("Overall:", results.get("overall_success"))
 Notes:
 - If validation fails and fail_on_validation_error=False (default), the action may still be marked successful if HTTP status matches; the validation error is recorded on the action under 'response_validation_error'.
 - The parsed model instance is available via action.get_result('response_model_instance') and in Journey context under response_model_context_key (default 'last_response_model').
+
+
+
+## API JSON Path Assertions (Optional)
+
+For lightweight contract checks without introducing a response model, use `expected_json_paths`.
+
+Example:
+
+```python
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+
+step = Step(
+    name="Auth Me Contract",
+    description="GET /api/v1/auth/me returns expected JSON shape",
+    actions=[
+        ApiRequestAction(
+            method="GET",
+            url="/api/v1/auth/me",
+            expected_status=200,
+            expected_json_paths={
+                "data.email": "__exists__",
+                "data.mfa_enabled": "__exists__",
+            },
+        )
+    ],
+)
+
+journey = Journey(name="API Contract Smoke", description="JSON path assertion check", steps=[step])
+results = JourneyExecutor(journey=journey, target_url="http://localhost:8080", mode="API").run()
+print("Overall:", results.get("overall_success"))
+```
+
+Notes:
+- Paths use dot notation and support list indices (for example `data.items.0.id`).
+- Use `"__exists__"` as the expected value to assert presence only.
+- Failures are stored on the action under `json_path_checks` and `json_paths_ok`.
 
 
 

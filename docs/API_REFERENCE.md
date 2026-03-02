@@ -21,7 +21,15 @@ Abstract base class for all TTP implementations.
 
 ```python
 class TTP(ABC):
-    def __init__(self, name: str, description: str)
+    def __init__(
+        self,
+        name: str,
+        description: str,
+        expected_result: bool = True,
+        authentication: Optional[Authentication] = None,
+        execution_mode: str = "ui",
+        csrf_protection: Optional[CSRFProtection] = None,
+    )
 ```
 
 #### Constructor Parameters
@@ -30,6 +38,10 @@ class TTP(ABC):
 |-----------|------|-------------|
 | `name` | `str` | Human-readable name for the TTP |
 | `description` | `str` | Description of what the TTP does |
+| `expected_result` | `bool` | Whether success is expected (`True`) or failure is expected (`False`) |
+| `authentication` | `Optional[Authentication]` | Optional authentication strategy |
+| `execution_mode` | `str` | `"ui"` (default) or `"api"` |
+| `csrf_protection` | `Optional[CSRFProtection]` | Optional CSRF helper for API mode |
 
 #### Abstract Methods
 
@@ -86,7 +98,8 @@ class TTPExecutor:
                  target_url: str, 
                  headless: bool = True, 
                  delay: int = 1, 
-                 behavior: Optional[Behavior] = None)
+                 behavior: Optional[Behavior] = None,
+                 sleep_fn=None)
 ```
 
 #### Constructor Parameters
@@ -98,6 +111,7 @@ class TTPExecutor:
 | `headless` | `bool` | `True` | Run browser in headless mode |
 | `delay` | `int` | `1` | Default delay between steps (seconds) |
 | `behavior` | `Optional[Behavior]` | `None` | Behavior to control execution |
+| `sleep_fn` | `Optional[Callable[[float], None]]` | `None` | Optional sleep override (useful for deterministic tests) |
 
 #### Methods
 
@@ -817,6 +831,7 @@ executor = JourneyExecutor(
     behavior=None,
     driver_options=None,
     mode="API",  # "UI" (default) or "API"
+    sleep_fn=None,  # optional sleep override for deterministic tests
 )
 ```
 
@@ -856,6 +871,7 @@ class ApiRequestAction(Action):
         self,
         method: str,
         url: str,
+        flush: bool = False,
         params: Optional[Dict[str, Any]] = None,
         body_json: Optional[Dict[str, Any]] = None,
         data: Optional[Dict[str, Any]] = None,
@@ -865,12 +881,18 @@ class ApiRequestAction(Action):
         name: Optional[str] = None,
         description: Optional[str] = None,
         expected_result: bool = True,
+        response_model: Optional[Any] = None,
+        response_model_context_key: Optional[str] = None,
+        fail_on_validation_error: bool = False,
+        expected_json_paths: Optional[Dict[str, Any]] = None,
+        honor_rate_limit: bool = True,
     ) -> None: ...
 ```
 
 Parameters:
 - method: HTTP method (GET, POST, PUT, DELETE, ...)
 - url: Absolute URL or path (if path, it is resolved against Journey context 'target_url')
+- flush: Close and clear requests session after this action
 - params: Optional query parameters
 - body_json: JSON body dict (sent via 'json=')
 - data: Form data or bytes (sent via 'data=')
@@ -878,6 +900,9 @@ Parameters:
 - expected_status: Status code considered success (None to treat response.ok as success)
 - timeout: requests timeout in seconds
 - name/description/expected_result: Standard Action metadata
+- response_model/response_model_context_key/fail_on_validation_error: optional response model parsing controls
+- expected_json_paths: Optional dot-path assertions against JSON response body. Use `"__exists__"` to assert presence only.
+- honor_rate_limit: honor Retry-After/rate-limit backoff behavior
 
 Execution details:
 - Uses context['requests_session'] if present; creates one if not.
@@ -886,11 +911,19 @@ Execution details:
 - Stores results on the action:
   - 'url', 'request_headers', 'status_code', 'response_headers'
   - 'response_json' or 'response_text' (first 2000 chars)
+  - retry metadata when applicable: 'attempt_count', 'retry_reason', 'retry_wait_s', 'final_error_type', 'final_error_message'
 - Updates Journey context:
   - 'last_response_headers', 'last_response_url'
 
 Return value:
-- True if actual response matched expected_status (or response.ok if expected_status is None), else False.
+- True if HTTP status checks pass and all expected_json_paths assertions pass (if configured).
+
+JSON path assertion details (`expected_json_paths`):
+- Format: `{ "path.to.field": expected_value }`
+- Dot paths support dict keys and list indices (for example: `"data.items.0.id"`).
+- Special value `"__exists__"` asserts only that the path is present.
+- Per-path diagnostics are stored in action result key `json_path_checks`.
+- Aggregate result is stored in `json_paths_ok` and combined final check in `api_assertions_ok`.
 
 Example:
 
@@ -909,6 +942,10 @@ executor = JourneyExecutor(journey=journey, target_url="http://localhost:8080", 
 results = executor.run()
 assert results["overall_success"] is True
 ```
+
+Determinism hooks:
+- If Journey context includes `_time_fn` and/or `_sleep_fn`, `ApiRequestAction` uses them for timing and backoff behavior.
+- This keeps production defaults unchanged while enabling deterministic unit tests.
 
 
 
@@ -957,6 +994,40 @@ step = Step(
 journey = Journey(name="API Schema Smoke", description="Check schema", steps=[step])
 executor = JourneyExecutor(journey=journey, target_url="http://localhost:8080", mode="API")
 results = executor.run()
+assert results["overall_success"] is True
+```
+
+
+### ApiRequestAction: JSON Path Assertions
+
+Use `expected_json_paths` when you want lightweight response contract checks without defining a model.
+
+Example:
+
+```python
+from scythe.journeys.base import Journey, Step
+from scythe.journeys.actions import ApiRequestAction
+from scythe.journeys.executor import JourneyExecutor
+
+step = Step(
+    name="User profile contract",
+    description="Verify key fields exist and status is active",
+    actions=[
+        ApiRequestAction(
+            method="GET",
+            url="/api/v1/auth/me",
+            expected_status=200,
+            expected_json_paths={
+                "data.email": "__exists__",
+                "data.mfa_enabled": "__exists__",
+                "data.account_status": "active",
+            },
+        )
+    ],
+)
+
+journey = Journey(name="API Contract Smoke", description="JSON path checks", steps=[step])
+results = JourneyExecutor(journey=journey, target_url="http://localhost:8080", mode="API").run()
 assert results["overall_success"] is True
 ```
 

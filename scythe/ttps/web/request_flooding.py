@@ -16,41 +16,48 @@ from ...payloads.generators import PayloadGenerator
 class RequestFloodingTTP(TTP):
     """
     A TTP that emulates DDoS and request flooding attacks to test application resilience.
-    
+
     This TTP tests an application's ability to withstand high-volume request attacks
     and rate limiting mechanisms by sending multiple rapid requests to target endpoints.
-    
+
     Supports two execution modes:
     - UI mode: Uses Selenium to repeatedly interact with web pages/forms
     - API mode: Makes rapid HTTP requests to API endpoints
-    
+
     Attack patterns include:
     - Volume flooding: High number of requests in short time
     - Slowloris-style: Slow, prolonged connections
     - Burst flooding: Intermittent bursts of high traffic
     - Resource exhaustion: Targeting expensive operations
     """
-    
-    def __init__(self,
-                 target_endpoints: List[str] = None,
-                 request_count: int = 100,
-                 requests_per_second: float = 10.0,
-                 attack_pattern: str = 'volume',
-                 concurrent_threads: int = 5,
-                 payload_data: Optional[Union[Dict[str, Any], PayloadGenerator, List[Dict[str, Any]]]] = None,
-                 http_method: str = 'GET',
-                 form_selector: str = None,
-                 submit_selector: str = None,
-                 expected_result: bool = False,
-                 authentication=None,
-                 execution_mode: str = 'api',
-                 csrf_protection=None,
-                 success_indicators: Optional[Dict[str, Any]] = None,
-                 user_agents: Optional[List[str]] = None,
-                 randomize_timing: bool = True):
+
+    def __init__(
+        self,
+        target_endpoints: List[str] = None,
+        request_count: int = 100,
+        requests_per_second: float = 10.0,
+        attack_pattern: str = "volume",
+        concurrent_threads: int = 5,
+        payload_data: Optional[
+            Union[Dict[str, Any], PayloadGenerator, List[Dict[str, Any]]]
+        ] = None,
+        http_method: str = "GET",
+        form_selector: str = None,
+        submit_selector: str = None,
+        expected_result: bool = False,
+        authentication=None,
+        execution_mode: str = "api",
+        csrf_protection=None,
+        success_indicators: Optional[Dict[str, Any]] = None,
+        user_agents: Optional[List[str]] = None,
+        randomize_timing: bool = True,
+        rng_seed: Optional[int] = None,
+        time_fn=None,
+        sleep_fn=None,
+    ):
         """
         Initialize the Request Flooding TTP.
-        
+
         Args:
             target_endpoints: List of endpoint paths to target (e.g., ['/api/search', '/login'])
             request_count: Total number of requests to send per endpoint
@@ -79,87 +86,99 @@ class RequestFloodingTTP(TTP):
             expected_result=expected_result,
             authentication=authentication,
             execution_mode=execution_mode,
-            csrf_protection=csrf_protection
+            csrf_protection=csrf_protection,
         )
-        
+
         # Core configuration
-        self.target_endpoints = target_endpoints or ['/']
+        self.target_endpoints = target_endpoints or ["/"]
         self.request_count = request_count
         self.requests_per_second = requests_per_second
         self.attack_pattern = attack_pattern.lower()
-        self.concurrent_threads = min(concurrent_threads, 20)  # Cap to prevent system overload
+        self.concurrent_threads = min(
+            concurrent_threads, 20
+        )  # Cap to prevent system overload
 
         # Handle different payload_data types
         self.payload_data = payload_data
         self._payload_data_type = self._determine_payload_data_type(payload_data)
 
         self.http_method = http_method.upper()
-        
+
         # UI mode configuration
         self.form_selector = form_selector
         self.submit_selector = submit_selector
-        
+
         # Attack sophistication
         self.user_agents = user_agents or [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101'
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:91.0) Gecko/20100101",
         ]
         self.randomize_timing = randomize_timing
-        
+        self._rng = random.Random(rng_seed)
+        self._time_fn = time_fn or time.time
+        self._sleep_fn = sleep_fn or time.sleep
+
         # Success/failure detection
-        self.success_indicators = success_indicators or {
-            'rate_limit_status_codes': [429, 503, 502],
-            'error_keywords': ['rate limit', 'too many requests', 'service unavailable'],
-            'max_response_time': 30.0,  # Consider slow responses as potential DoS impact
-            'expected_success_rate': 0.1  # Expect most requests to be blocked if defenses work
-        }
-        
+        self.success_indicators = (
+            success_indicators
+            or {
+                "rate_limit_status_codes": [429, 503, 502],
+                "error_keywords": [
+                    "rate limit",
+                    "too many requests",
+                    "service unavailable",
+                ],
+                "max_response_time": 30.0,  # Consider slow responses as potential DoS impact
+                "expected_success_rate": 0.1,  # Expect most requests to be blocked if defenses work
+            }
+        )
+
         # Attack results tracking
         self.attack_results = {
-            'total_requests': 0,
-            'successful_requests': 0,
-            'failed_requests': 0,
-            'rate_limited_requests': 0,
-            'error_responses': 0,
-            'avg_response_time': 0.0,
-            'max_response_time': 0.0,
-            'responses_by_status': {},
-            'attack_effectiveness': 0.0
+            "total_requests": 0,
+            "successful_requests": 0,
+            "failed_requests": 0,
+            "rate_limited_requests": 0,
+            "error_responses": 0,
+            "avg_response_time": 0.0,
+            "max_response_time": 0.0,
+            "responses_by_status": {},
+            "attack_effectiveness": 0.0,
         }
 
     def _determine_payload_data_type(self, payload_data) -> str:
         """Determine the type of payload_data provided."""
         if payload_data is None:
-            return 'none'
+            return "none"
         elif isinstance(payload_data, PayloadGenerator):
-            return 'generator'
+            return "generator"
         elif isinstance(payload_data, list):
-            return 'list'
+            return "list"
         elif isinstance(payload_data, dict):
-            return 'dict'
+            return "dict"
         else:
             # Check if it's iterable (could be a custom generator)
             try:
                 iter(payload_data)
-                return 'iterable'
+                return "iterable"
             except TypeError:
-                return 'dict'  # Fallback to treating as single dict
+                return "dict"  # Fallback to treating as single dict
 
     def _get_payload_data_iterator(self):
         """
         Create an iterator for payload data based on its type.
         Yields data dicts that will be cycled through for each request.
         """
-        if self._payload_data_type == 'none':
+        if self._payload_data_type == "none":
             # Yield empty dict indefinitely
             while True:
                 yield {}
-        elif self._payload_data_type == 'generator':
+        elif self._payload_data_type == "generator":
             # Use the PayloadGenerator
             yield from self.payload_data()
-        elif self._payload_data_type == 'list':
+        elif self._payload_data_type == "list":
             # Cycle through the list
             if not self.payload_data:
                 while True:
@@ -169,7 +188,7 @@ class RequestFloodingTTP(TTP):
                 while True:
                     yield self.payload_data[i % len(self.payload_data)]
                     i += 1
-        elif self._payload_data_type == 'iterable':
+        elif self._payload_data_type == "iterable":
             # Use the iterable and cycle through it
             payload_list = list(self.payload_data)
             if not payload_list:
@@ -183,14 +202,20 @@ class RequestFloodingTTP(TTP):
         else:  # 'dict'
             # Use the same dict for all requests
             while True:
-                yield self.payload_data.copy() if isinstance(self.payload_data, dict) else {}
+                yield (
+                    self.payload_data.copy()
+                    if isinstance(self.payload_data, dict)
+                    else {}
+                )
 
     def get_payloads(self) -> Generator[Dict[str, Any], None, None]:
         """
         Generates attack payloads based on the configured attack pattern.
         Each payload contains timing and configuration data for the attack.
         """
-        base_delay = 1.0 / self.requests_per_second if self.requests_per_second > 0 else 0.1
+        base_delay = (
+            1.0 / self.requests_per_second if self.requests_per_second > 0 else 0.1
+        )
 
         # Create iterator for payload data
         payload_data_iter = self._get_payload_data_iterator()
@@ -203,33 +228,35 @@ class RequestFloodingTTP(TTP):
                 data = {}
 
             payload = {
-                'request_id': i,
-                'endpoint': self.target_endpoints[i % len(self.target_endpoints)],
-                'data': data.copy(),
-                'user_agent': random.choice(self.user_agents),
-                'delay': self._calculate_delay(i, base_delay),
-                'timeout': self._calculate_timeout(i)
+                "request_id": i,
+                "endpoint": self.target_endpoints[i % len(self.target_endpoints)],
+                "data": data.copy(),
+                "user_agent": self._rng.choice(self.user_agents),
+                "delay": self._calculate_delay(i, base_delay),
+                "timeout": self._calculate_timeout(i),
             }
 
             # Add attack-pattern specific modifications
-            if self.attack_pattern == 'burst':
+            if self.attack_pattern == "burst":
                 # Create bursts every 10 requests
                 if i % 10 == 0:
-                    payload['delay'] = 0.05  # Very fast burst
+                    payload["delay"] = 0.05  # Very fast burst
                 else:
-                    payload['delay'] = base_delay * 3  # Slower between bursts
+                    payload["delay"] = base_delay * 3  # Slower between bursts
 
-            elif self.attack_pattern == 'slowloris':
-                payload['timeout'] = 60.0  # Very long timeout
-                payload['delay'] = base_delay * 2  # Slower rate but longer connections
+            elif self.attack_pattern == "slowloris":
+                payload["timeout"] = 60.0  # Very long timeout
+                payload["delay"] = base_delay * 2  # Slower rate but longer connections
 
-            elif self.attack_pattern == 'resource_exhaustion':
+            elif self.attack_pattern == "resource_exhaustion":
                 # Add resource-intensive parameters to existing data
-                payload['data'].update({
-                    'limit': 10000,  # Request large datasets
-                    'search': '*',   # Broad search terms
-                    'recursive': True
-                })
+                payload["data"].update(
+                    {
+                        "limit": 10000,  # Request large datasets
+                        "search": "*",  # Broad search terms
+                        "recursive": True,
+                    }
+                )
 
             yield payload
 
@@ -237,16 +264,16 @@ class RequestFloodingTTP(TTP):
         """Calculate delay between requests based on pattern and randomization."""
         if not self.randomize_timing:
             return base_delay
-            
+
         # Add randomization (±25% of base delay)
-        jitter = base_delay * 0.25 * (random.random() - 0.5) * 2
+        jitter = base_delay * 0.25 * (self._rng.random() - 0.5) * 2
         return max(0.01, base_delay + jitter)
-    
+
     def _calculate_timeout(self, request_index: int) -> float:
         """Calculate request timeout based on attack pattern."""
-        if self.attack_pattern == 'slowloris':
+        if self.attack_pattern == "slowloris":
             return 60.0
-        elif self.attack_pattern == 'resource_exhaustion':
+        elif self.attack_pattern == "resource_exhaustion":
             return 30.0
         else:
             return 10.0
@@ -257,26 +284,26 @@ class RequestFloodingTTP(TTP):
         For UI mode, this repeatedly submits forms or navigates to pages.
         """
         try:
-            endpoint = payload['endpoint']
-            delay = payload['delay']
-            
+            endpoint = payload["endpoint"]
+            delay = payload["delay"]
+
             # Wait for the calculated delay
             if delay > 0:
-                time.sleep(delay)
-            
+                self._sleep_fn(delay)
+
             # Navigate to the target endpoint
             current_url = driver.current_url
-            base_url = current_url.split('?')[0].rstrip('/')
+            base_url = current_url.split("?")[0].rstrip("/")
             target_url = f"{base_url}{endpoint}"
-            
-            start_time = time.time()
+
+            start_time = self._time_fn()
             driver.get(target_url)
-            
+
             # If we have form selectors, submit the form
             if self.form_selector and self.submit_selector:
                 try:
                     # Fill form with payload data
-                    for field_name, field_value in payload['data'].items():
+                    for field_name, field_value in payload["data"].items():
                         try:
                             field = driver.find_element(By.NAME, field_name)
                             field.clear()
@@ -289,20 +316,22 @@ class RequestFloodingTTP(TTP):
                                 field.send_keys(str(field_value))
                             except NoSuchElementException:
                                 continue  # Skip this field if not found
-                    
+
                     # Submit the form
-                    submit_btn = driver.find_element(By.CSS_SELECTOR, self.submit_selector)
+                    submit_btn = driver.find_element(
+                        By.CSS_SELECTOR, self.submit_selector
+                    )
                     submit_btn.click()
-                    
+
                 except NoSuchElementException:
                     pass  # Continue even if form submission fails
-            
+
             # Record timing
-            response_time = time.time() - start_time
+            response_time = self._time_fn() - start_time
             self._record_ui_result(response_time, driver.current_url)
-            
+
         except TimeoutException:
-            self._record_ui_result(payload['timeout'], None, timeout=True)
+            self._record_ui_result(payload["timeout"], None, timeout=True)
         except Exception as e:
             self._record_ui_result(0.0, None, error=str(e))
 
@@ -314,278 +343,318 @@ class RequestFloodingTTP(TTP):
         try:
             page_source = driver.page_source.lower()
             current_url = driver.current_url.lower()
-            
+
             # Check for rate limiting indicators
             rate_limit_indicators = [
-                'rate limit', 'too many requests', 'service unavailable',
-                'temporarily unavailable', 'error 429', 'error 503',
-                'please wait', 'slow down', 'blocked'
+                "rate limit",
+                "too many requests",
+                "service unavailable",
+                "temporarily unavailable",
+                "error 429",
+                "error 503",
+                "please wait",
+                "slow down",
+                "blocked",
             ]
-            
+
             for indicator in rate_limit_indicators:
                 if indicator in page_source or indicator in current_url:
                     return not self.expected_result  # Rate limiting found
-            
+
             # If no rate limiting found and we expected defenses, that's a failure
             return self.expected_result
-            
+
         except Exception:
             return False
 
-    def execute_step_api(self, session: requests.Session, payload: Dict[str, Any], context: Dict[str, Any]) -> requests.Response:
+    def execute_step_api(
+        self,
+        session: requests.Session,
+        payload: Dict[str, Any],
+        context: Dict[str, Any],
+    ) -> requests.Response:
         """
         Executes a single flooding request in API mode.
         This is where the actual HTTP flooding happens.
         """
         from urllib.parse import urljoin
-        
+
         # Build the full URL
-        base_url = context.get('target_url', '')
+        base_url = context.get("target_url", "")
         if not base_url:
             raise ValueError("target_url must be set in context for API mode")
-        
-        endpoint = payload['endpoint']
+
+        endpoint = payload["endpoint"]
         url = urljoin(base_url, endpoint)
-        
+
         # Prepare headers
-        headers = {
-            'User-Agent': payload['user_agent']
-        }
+        headers = {"User-Agent": payload["user_agent"]}
 
         # Merge auth headers from context
-        auth_headers = context.get('auth_headers', {})
+        auth_headers = context.get("auth_headers", {})
         if auth_headers:
             headers.update(auth_headers)
 
         # Inject CSRF token if CSRF protection is enabled
-        csrf_protection = context.get('csrf_protection')
-        data = payload.get('data')
+        csrf_protection = context.get("csrf_protection")
+        data = payload.get("data")
         if isinstance(csrf_protection, CSRFProtection):
             headers, data = csrf_protection.inject_token(
-                headers=headers,
-                data=data,
-                method=self.http_method,
-                context=context
+                headers=headers, data=data, method=self.http_method, context=context
             )
             if data is not None:
-                payload['data'] = data
+                payload["data"] = data
 
         # Wait for the calculated delay
-        delay = payload['delay']
+        delay = payload["delay"]
         if delay > 0:
-            time.sleep(delay)
-        
+            self._sleep_fn(delay)
+
         # Honor existing rate limiting from previous requests
-        resume_at = context.get('rate_limit_resume_at')
-        if resume_at and time.time() < resume_at:
+        resume_at = context.get("rate_limit_resume_at")
+        if resume_at and self._time_fn() < resume_at:
             # Skip this request due to rate limiting
             raise requests.exceptions.RequestException("Rate limited")
-        
+
         # Make the request
-        start_time = time.time()
+        start_time = self._time_fn()
         try:
-            if self.http_method == 'GET':
+            if self.http_method == "GET":
                 response = session.get(
-                    url, 
-                    params=payload['data'],
+                    url,
+                    params=payload["data"],
                     headers=headers,
-                    timeout=payload['timeout']
+                    timeout=payload["timeout"],
                 )
             else:
                 response = session.request(
                     self.http_method,
                     url,
-                    json=payload['data'],
+                    json=payload["data"],
                     headers=headers,
-                    timeout=payload['timeout']
+                    timeout=payload["timeout"],
                 )
-            
+
             # Record the result
-            response_time = time.time() - start_time
+            response_time = self._time_fn() - start_time
             self._record_api_result(response, response_time, context)
 
             # Extract CSRF token from response if CSRF protection is enabled
-            if isinstance(csrf_protection, CSRFProtection) and csrf_protection.auto_extract:
-                csrf_protection.extract_token(response=response, session=session, context=context)
+            if (
+                isinstance(csrf_protection, CSRFProtection)
+                and csrf_protection.auto_extract
+            ):
+                csrf_protection.extract_token(
+                    response=response, session=session, context=context
+                )
 
             return response
-            
+
         except requests.exceptions.Timeout:
-            response_time = payload['timeout']
+            response_time = payload["timeout"]
             self._record_api_result(None, response_time, context, timeout=True)
             raise
         except Exception as e:
-            response_time = time.time() - start_time
+            response_time = self._time_fn() - start_time
             self._record_api_result(None, response_time, context, error=str(e))
             raise
 
-    def verify_result_api(self, response: requests.Response, context: Dict[str, Any]) -> bool:
+    def verify_result_api(
+        self, response: requests.Response, context: Dict[str, Any]
+    ) -> bool:
         """
         Verifies if the flooding attack was effective or if defenses kicked in.
-        
+
         Args:
             response: The response from execute_step_api
             context: Shared context dictionary
-            
+
         Returns:
-            True if attack behavior detected (rate limiting, errors), 
+            True if attack behavior detected (rate limiting, errors),
             False if requests succeeded without defensive measures
         """
         # Check if we have accumulated enough results to make a determination
-        total_requests = self.attack_results['total_requests']
-        
+        total_requests = self.attack_results["total_requests"]
+
         # Early determination if we have enough data
         if total_requests >= min(20, self.request_count // 2):
-            success_rate = self.attack_results['successful_requests'] / total_requests
-            rate_limit_rate = self.attack_results['rate_limited_requests'] / total_requests
-            
+            success_rate = self.attack_results["successful_requests"] / total_requests
+            rate_limit_rate = (
+                self.attack_results["rate_limited_requests"] / total_requests
+            )
+
             # If we expected defenses (expected_result=False)
             if not self.expected_result:
                 # Good defense: high rate limiting, low success rate
-                if rate_limit_rate > 0.3 or success_rate < self.success_indicators['expected_success_rate']:
+                if (
+                    rate_limit_rate > 0.3
+                    or success_rate < self.success_indicators["expected_success_rate"]
+                ):
                     return True
-                    
+
             # If we expected success (expected_result=True)
             else:
-                # Attack successful: high success rate, low rate limiting  
+                # Attack successful: high success rate, low rate limiting
                 if success_rate > 0.7 and rate_limit_rate < 0.2:
                     return True
-        
+
         # Check immediate response indicators
         if response:
             # Rate limiting detected
-            if response.status_code in self.success_indicators['rate_limit_status_codes']:
+            if (
+                response.status_code
+                in self.success_indicators["rate_limit_status_codes"]
+            ):
                 return not self.expected_result
-                
+
             # Check response content for defensive indicators
             try:
                 response_text = response.text.lower()
-                for keyword in self.success_indicators['error_keywords']:
+                for keyword in self.success_indicators["error_keywords"]:
                     if keyword in response_text:
                         return not self.expected_result
             except Exception:
                 pass
-        
+
         # Default to continuing the test
         return False
 
-    def _record_ui_result(self, response_time: float, url: str = None, timeout: bool = False, error: str = None):
+    def _record_ui_result(
+        self,
+        response_time: float,
+        url: str = None,
+        timeout: bool = False,
+        error: str = None,
+    ):
         """Record results from UI mode execution."""
-        self.attack_results['total_requests'] += 1
-        
+        self.attack_results["total_requests"] += 1
+
         if timeout:
-            self.attack_results['failed_requests'] += 1
+            self.attack_results["failed_requests"] += 1
         elif error:
-            self.attack_results['error_responses'] += 1
-        elif url and any(indicator in url for indicator in ['error', 'limit', '429', '503']):
-            self.attack_results['rate_limited_requests'] += 1
+            self.attack_results["error_responses"] += 1
+        elif url and any(
+            indicator in url for indicator in ["error", "limit", "429", "503"]
+        ):
+            self.attack_results["rate_limited_requests"] += 1
         else:
-            self.attack_results['successful_requests'] += 1
-        
+            self.attack_results["successful_requests"] += 1
+
         # Update timing stats
-        self.attack_results['max_response_time'] = max(
-            self.attack_results['max_response_time'], response_time
-        )
-        
-        # Calculate rolling average
-        total = self.attack_results['total_requests']
-        current_avg = self.attack_results['avg_response_time']
-        self.attack_results['avg_response_time'] = (
-            (current_avg * (total - 1) + response_time) / total
+        self.attack_results["max_response_time"] = max(
+            self.attack_results["max_response_time"], response_time
         )
 
-    def _record_api_result(self, response: requests.Response = None, response_time: float = 0.0, 
-                          context: Dict[str, Any] = None, timeout: bool = False, error: str = None):
+        # Calculate rolling average
+        total = self.attack_results["total_requests"]
+        current_avg = self.attack_results["avg_response_time"]
+        self.attack_results["avg_response_time"] = (
+            current_avg * (total - 1) + response_time
+        ) / total
+
+    def _record_api_result(
+        self,
+        response: requests.Response = None,
+        response_time: float = 0.0,
+        context: Dict[str, Any] = None,
+        timeout: bool = False,
+        error: str = None,
+    ):
         """Record results from API mode execution."""
-        self.attack_results['total_requests'] += 1
-        
+        self.attack_results["total_requests"] += 1
+
         if timeout:
-            self.attack_results['failed_requests'] += 1
+            self.attack_results["failed_requests"] += 1
         elif error:
-            self.attack_results['error_responses'] += 1
+            self.attack_results["error_responses"] += 1
         elif response:
             status_code = response.status_code
-            
+
             # Track status code distribution
-            if status_code not in self.attack_results['responses_by_status']:
-                self.attack_results['responses_by_status'][status_code] = 0
-            self.attack_results['responses_by_status'][status_code] += 1
-            
+            if status_code not in self.attack_results["responses_by_status"]:
+                self.attack_results["responses_by_status"][status_code] = 0
+            self.attack_results["responses_by_status"][status_code] += 1
+
             # Categorize the response
-            if status_code in self.success_indicators['rate_limit_status_codes']:
-                self.attack_results['rate_limited_requests'] += 1
-                
+            if status_code in self.success_indicators["rate_limit_status_codes"]:
+                self.attack_results["rate_limited_requests"] += 1
+
                 # Update rate limiting in context
-                if context and response.headers.get('Retry-After'):
+                if context and response.headers.get("Retry-After"):
                     try:
-                        retry_after = int(response.headers['Retry-After'])
-                        context['rate_limit_resume_at'] = time.time() + min(retry_after, 60)
+                        retry_after = int(response.headers["Retry-After"])
+                        context["rate_limit_resume_at"] = self._time_fn() + min(
+                            retry_after, 60
+                        )
                     except (ValueError, TypeError):
-                        context['rate_limit_resume_at'] = time.time() + 5
-                        
+                        context["rate_limit_resume_at"] = self._time_fn() + 5
+
             elif 200 <= status_code < 300:
-                self.attack_results['successful_requests'] += 1
+                self.attack_results["successful_requests"] += 1
             else:
-                self.attack_results['error_responses'] += 1
-        
+                self.attack_results["error_responses"] += 1
+
         # Update timing statistics
-        self.attack_results['max_response_time'] = max(
-            self.attack_results['max_response_time'], response_time
+        self.attack_results["max_response_time"] = max(
+            self.attack_results["max_response_time"], response_time
         )
-        
+
         # Calculate rolling average response time
-        total = self.attack_results['total_requests']
-        current_avg = self.attack_results['avg_response_time']
-        self.attack_results['avg_response_time'] = (
-            (current_avg * (total - 1) + response_time) / total
-        )
-        
+        total = self.attack_results["total_requests"]
+        current_avg = self.attack_results["avg_response_time"]
+        self.attack_results["avg_response_time"] = (
+            current_avg * (total - 1) + response_time
+        ) / total
+
         # Calculate attack effectiveness score
         if total > 0:
-            success_rate = self.attack_results['successful_requests'] / total
-            rate_limit_rate = self.attack_results['rate_limited_requests'] / total
-            
+            success_rate = self.attack_results["successful_requests"] / total
+            rate_limit_rate = self.attack_results["rate_limited_requests"] / total
+
             if self.expected_result:
                 # Higher success rate = more effective attack
-                self.attack_results['attack_effectiveness'] = success_rate * 100
+                self.attack_results["attack_effectiveness"] = success_rate * 100
             else:
                 # Higher rate limiting = more effective defenses (which we want to detect)
-                self.attack_results['attack_effectiveness'] = rate_limit_rate * 100
+                self.attack_results["attack_effectiveness"] = rate_limit_rate * 100
 
     def get_attack_summary(self) -> Dict[str, Any]:
         """
         Returns a comprehensive summary of the attack results.
         Useful for detailed analysis and reporting.
         """
-        total = self.attack_results['total_requests']
+        total = self.attack_results["total_requests"]
         if total == 0:
             return {"error": "No requests completed"}
-        
+
         summary = {
             "attack_pattern": self.attack_pattern,
             "total_requests": total,
-            "success_rate": (self.attack_results['successful_requests'] / total) * 100,
-            "rate_limit_rate": (self.attack_results['rate_limited_requests'] / total) * 100,
-            "error_rate": (self.attack_results['error_responses'] / total) * 100,
-            "avg_response_time": round(self.attack_results['avg_response_time'], 3),
-            "max_response_time": round(self.attack_results['max_response_time'], 3),
-            "attack_effectiveness": round(self.attack_results['attack_effectiveness'], 1),
-            "status_code_distribution": self.attack_results['responses_by_status'],
-            "defense_assessment": self._assess_defenses()
+            "success_rate": (self.attack_results["successful_requests"] / total) * 100,
+            "rate_limit_rate": (self.attack_results["rate_limited_requests"] / total)
+            * 100,
+            "error_rate": (self.attack_results["error_responses"] / total) * 100,
+            "avg_response_time": round(self.attack_results["avg_response_time"], 3),
+            "max_response_time": round(self.attack_results["max_response_time"], 3),
+            "attack_effectiveness": round(
+                self.attack_results["attack_effectiveness"], 1
+            ),
+            "status_code_distribution": self.attack_results["responses_by_status"],
+            "defense_assessment": self._assess_defenses(),
         }
-        
+
         return summary
 
     def _assess_defenses(self) -> str:
         """Assess the effectiveness of the target's defensive measures."""
-        total = self.attack_results['total_requests']
+        total = self.attack_results["total_requests"]
         if total == 0:
             return "Insufficient data"
-        
-        success_rate = self.attack_results['successful_requests'] / total
-        rate_limit_rate = self.attack_results['rate_limited_requests'] / total
-        avg_response_time = self.attack_results['avg_response_time']
-        
+
+        success_rate = self.attack_results["successful_requests"] / total
+        rate_limit_rate = self.attack_results["rate_limited_requests"] / total
+        avg_response_time = self.attack_results["avg_response_time"]
+
         if rate_limit_rate > 0.5:
             return "Strong rate limiting detected - Good defenses"
         elif rate_limit_rate > 0.2:

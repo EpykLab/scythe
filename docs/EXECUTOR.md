@@ -259,19 +259,21 @@ executor = CustomTTPExecutor(ttp=my_ttp, target_url="http://example.com")
 
 ### Logging Configuration
 
-The executor uses Python's logging framework:
+Executors use Python's logging framework via named loggers (for example, `logging.getLogger(ttp.name)`).
+Scythe no longer configures global logging handlers inside library code.
+
+You should configure logging once in your application or test harness:
 
 ```python
-# Default logging setup
+import logging
+
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('ttp_test.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 ```
+
+This avoids side effects in CI and when embedding Scythe into larger applications.
 
 ### Custom Logging
 
@@ -292,6 +294,20 @@ logging.basicConfig(
 executor = TTPExecutor(ttp=my_ttp, target_url="http://example.com")
 executor.run()
 ```
+
+### Deterministic Timing (Testing)
+
+For deterministic unit tests, you can inject a sleep function into `TTPExecutor`:
+
+```python
+executor = TTPExecutor(
+    ttp=my_ttp,
+    target_url="http://example.com",
+    sleep_fn=lambda _seconds: None,
+)
+```
+
+This keeps production behavior unchanged while letting tests avoid real-time delays.
 
 ## Advanced Usage Patterns
 
@@ -633,7 +649,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: ttp-results
-        path: ttp_test.log
+        path: logs/
 ```
 
 ### CI/CD Test Script

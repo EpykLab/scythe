@@ -31,19 +31,19 @@ Scythe is a powerful Python-based framework designed for testing applications un
   - Creating custom TTPs for any testing scenario
   - Advanced patterns and best practices
 
-- **[Journeys Framework](JOURNEYS.md)** - Multi-step workflow testing
+- **[Journey + API Actions](API_REFERENCE.md#journey-api-mode-and-apirequestaction-new)** - Multi-step workflow and API-mode testing
   - Creating complex user workflows
   - Step and action composition
   - Context sharing between steps
   - Error handling and recovery
 
-- **[Authentication Systems](AUTHENTICATION.md)** - Pre-execution authentication
+- **[Authentication Systems](HYBRID_AUTH.md)** - Pre-execution authentication
   - Basic authentication (username/password)
   - Bearer token authentication (APIs)
   - Custom authentication mechanisms
   - Session management and state handling
 
-- **[Orchestrators](ORCHESTRATORS.md)** - Scale and distribution management
+- **[Orchestration APIs](API_REFERENCE.md)** - Scale and distribution management
   - Scale orchestration for load testing
   - Distributed orchestration across networks
   - Batch processing with retry logic
@@ -63,7 +63,7 @@ Scythe is a powerful Python-based framework designed for testing applications un
   - Performance optimization
   - Context-aware payload generation
 
-- **[Expected Results System](EXPECTED_RESULTS.md)** - Unit-testing-style validation
+- **[Executor + Expected Results](EXECUTOR.md)** - Unit-testing-style validation
   - Defining expected outcomes
   - Professional result reporting
   - Integration with testing frameworks

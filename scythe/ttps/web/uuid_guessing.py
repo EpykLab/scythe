@@ -7,18 +7,20 @@ from uuid import UUID
 
 
 class GuessUUIDInURL(TTP):
-    def __init__(self,
-                 target_url: str,
-                 uri_root_path: str,
-                 payload_generator: PayloadGenerator,
-                 expected_result: bool = True,
-                 authentication=None):
-
+    def __init__(
+        self,
+        target_url: str,
+        uri_root_path: str,
+        payload_generator: PayloadGenerator,
+        expected_result: bool = True,
+        authentication=None,
+    ):
         super().__init__(
             name="UUID Guessing",
             description="simulate bruteforcing UUID's in the URL path",
             expected_result=expected_result,
-            authentication=authentication)
+            authentication=authentication,
+        )
 
         self.target_url = target_url
         self.uri_root_path = uri_root_path
@@ -33,7 +35,7 @@ class GuessUUIDInURL(TTP):
     def verify_result(self, driver: WebDriver) -> bool:
         resp = requests.head(driver.current_url, timeout=5)
 
-        if resp.status_code == 404 or 401 or 403:
+        if resp.status_code in (404, 401, 403):
             return False
         else:
             return True

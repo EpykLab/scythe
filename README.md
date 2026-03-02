@@ -794,6 +794,7 @@ Journeys support various action types for building complex workflows:
   - Supports JSON/form data
   - Automatic auth header injection
   - Pydantic response validation
+  - JSON path assertions (`expected_json_paths`)
   - Rate limit handling
 - `TTPAction`: Execute TTPs in API mode
 
@@ -807,6 +808,7 @@ api_action = ApiRequestAction(
     body_json={"name": "Test User", "email": "test@example.com"},
     expected_status=201,
     response_model=UserModel,  # Optional Pydantic validation
+    expected_json_paths={"data.id": "__exists__"},  # Optional lightweight contract checks
     response_model_context_key="created_user"  # Store in context
 )
 

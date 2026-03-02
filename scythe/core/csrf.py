@@ -57,15 +57,15 @@ class CSRFProtection:
 
     def __init__(
         self,
-        extract_from: Literal['cookie', 'header', 'body'] = 'cookie',
-        cookie_name: str = 'csrftoken',
-        header_name: str = 'X-CSRF-Token',
-        body_field: str = 'csrfToken',
-        inject_into: Literal['header', 'body'] = 'header',
+        extract_from: Literal["cookie", "header", "body"] = "cookie",
+        cookie_name: str = "csrftoken",
+        header_name: str = "X-CSRF-Token",
+        body_field: str = "csrfToken",
+        inject_into: Literal["header", "body"] = "header",
         refresh_endpoint: Optional[str] = None,
         auto_extract: bool = True,
         required_for_methods: Optional[list] = None,
-        retry_on_failure: bool = True
+        retry_on_failure: bool = True,
     ):
         """Initialize CSRF protection with configuration."""
         self.extract_from = extract_from
@@ -75,7 +75,12 @@ class CSRFProtection:
         self.inject_into = inject_into
         self.refresh_endpoint = refresh_endpoint
         self.auto_extract = auto_extract
-        self.required_for_methods = required_for_methods or ['POST', 'PUT', 'PATCH', 'DELETE']
+        self.required_for_methods = required_for_methods or [
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+        ]
         self.retry_on_failure = retry_on_failure
 
         # Runtime state
@@ -90,7 +95,7 @@ class CSRFProtection:
         self,
         response: Optional[requests.Response] = None,
         session: Optional[requests.Session] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> Optional[str]:
         """
         Extract CSRF token from response or session.
@@ -105,39 +110,49 @@ class CSRFProtection:
         """
         token = None
 
-        if self.extract_from == 'cookie':
+        if self.extract_from == "cookie":
             # Extract from cookie in session or response
             if session:
                 token = session.cookies.get(self.cookie_name)
                 if token:
-                    logger.debug(f"Extracted CSRF token from session cookie '{self.cookie_name}'")
+                    logger.debug(
+                        f"Extracted CSRF token from session cookie '{self.cookie_name}'"
+                    )
             elif response:
                 token = response.cookies.get(self.cookie_name)
                 if token:
-                    logger.debug(f"Extracted CSRF token from response cookie '{self.cookie_name}'")
+                    logger.debug(
+                        f"Extracted CSRF token from response cookie '{self.cookie_name}'"
+                    )
 
-        elif self.extract_from == 'header':
+        elif self.extract_from == "header":
             # Extract from response header
             if response:
                 token = response.headers.get(self.header_name)
                 if token:
-                    logger.debug(f"Extracted CSRF token from response header '{self.header_name}'")
+                    logger.debug(
+                        f"Extracted CSRF token from response header '{self.header_name}'"
+                    )
 
-        elif self.extract_from == 'body':
+        elif self.extract_from == "body":
             # Extract from JSON response body
             if response:
                 try:
                     body = response.json()
                     token = body.get(self.body_field)
                     if token:
-                        logger.debug(f"Extracted CSRF token from response body field '{self.body_field}'")
+                        logger.debug(
+                            f"Extracted CSRF token from response body field '{self.body_field}'"
+                        )
                 except (ValueError, AttributeError):
-                    logger.debug("Could not parse response body as JSON for CSRF extraction")
+                    logger.debug(
+                        "Could not parse response body as JSON for CSRF extraction"
+                    )
 
         if token:
             self._current_token = token
             if context is not None:
-                context['csrf_token'] = token
+                context["csrf_token"] = token
         elif self.auto_extract:
             logger.debug(f"No CSRF token found (extract_from={self.extract_from})")
 
@@ -154,8 +169,8 @@ class CSRFProtection:
             Current CSRF token or None
         """
         # Check context first, then fall back to internal state
-        if context and 'csrf_token' in context:
-            return context['csrf_token']
+        if context and "csrf_token" in context:
+            return context["csrf_token"]
         return self._current_token
 
     def inject_token(
@@ -163,8 +178,8 @@ class CSRFProtection:
         token: Optional[str] = None,
         headers: Optional[Dict[str, str]] = None,
         data: Optional[Dict[str, Any]] = None,
-        method: str = 'GET',
-        context: Optional[Dict[str, Any]] = None
+        method: str = "GET",
+        context: Optional[Dict[str, Any]] = None,
     ) -> tuple[Optional[Dict[str, str]], Optional[Dict[str, Any]]]:
         """
         Inject CSRF token into request headers or body.
@@ -192,13 +207,13 @@ class CSRFProtection:
             return headers, data
 
         # Inject into appropriate location
-        if self.inject_into == 'header':
+        if self.inject_into == "header":
             if headers is None:
                 headers = {}
             headers[self.header_name] = token
             logger.debug(f"Injected CSRF token into header '{self.header_name}'")
 
-        elif self.inject_into == 'body':
+        elif self.inject_into == "body":
             if data is None:
                 data = {}
             data[self.body_field] = token
@@ -210,7 +225,7 @@ class CSRFProtection:
         self,
         session: requests.Session,
         base_url: str,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> Optional[str]:
         """
         Refresh the CSRF token by making a request to get a new token.
@@ -231,10 +246,10 @@ class CSRFProtection:
         # Determine URL to use for refresh
         if self.refresh_endpoint:
             # Use dedicated refresh endpoint if configured
-            if self.refresh_endpoint.startswith('http'):
+            if self.refresh_endpoint.startswith("http"):
                 url = self.refresh_endpoint
             else:
-                url = base_url.rstrip('/') + '/' + self.refresh_endpoint.lstrip('/')
+                url = base_url.rstrip("/") + "/" + self.refresh_endpoint.lstrip("/")
             logger.debug(f"Refreshing CSRF token from dedicated endpoint: {url}")
         else:
             # Fallback: make a simple GET request to base URL
@@ -249,10 +264,12 @@ class CSRFProtection:
             # Store ALL response cookies in context for Secure cookie workaround
             # This is needed when cookies have Secure flag but we're testing over HTTP
             if context is not None and response.cookies:
-                context['initial_response_cookies'] = dict(response.cookies)
+                context["initial_response_cookies"] = dict(response.cookies)
 
             # Extract token from refresh response
-            token = self.extract_token(response=response, session=session, context=context)
+            token = self.extract_token(
+                response=response, session=session, context=context
+            )
 
             if token:
                 logger.info("Successfully refreshed CSRF token")
@@ -270,7 +287,7 @@ class CSRFProtection:
         response: requests.Response,
         session: requests.Session,
         base_url: str,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Handle a potential CSRF failure by attempting to refresh the token.
@@ -313,6 +330,8 @@ class CSRFProtection:
         Returns:
             True if the response indicates a CSRF failure that should be retried
         """
+        if not self.retry_on_failure or response is None:
+            return False
         return response.status_code in [403, 419]
 
     def __repr__(self) -> str:

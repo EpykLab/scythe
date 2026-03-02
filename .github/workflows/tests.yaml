@@ -1,9 +1,10 @@
-name: Create Release
+name: Test Suite
 
 on:
+  pull_request:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 jobs:
   tests:
@@ -27,20 +28,3 @@ jobs:
 
       - name: Run unit tests
         run: python -m unittest discover -s tests -p "test*.py" -v
-
-  release:
-    needs: tests
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true

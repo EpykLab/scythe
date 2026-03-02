@@ -8,30 +8,34 @@ from ...core.ttp import TTP
 from ...payloads.generators import PayloadGenerator
 from ...core.csrf import CSRFProtection
 
+
 class InputFieldInjector(TTP):
     """
     SQL Injection TTP that tests input fields for SQL injection vulnerabilities.
-    
+
     Supports two execution modes:
     - UI mode: Fills form fields with SQL payloads
     - API mode: Sends SQL payloads in API request body fields
     """
-    def __init__(self,
-                 target_url: str = None,
-                 field_selector: str = None,
-                 submit_selector: str = None,
-                 payload_generator: PayloadGenerator = None,
-                 expected_result: bool = True,
-                 authentication=None,
-                 execution_mode: str = 'ui',
-                 api_endpoint: Optional[str] = None,
-                 injection_field: str = 'query',
-                 full_form_payload: dict = {},
-                 http_method: str = 'POST',
-                 csrf_protection=None):
+
+    def __init__(
+        self,
+        target_url: str = None,
+        field_selector: str = None,
+        submit_selector: str = None,
+        payload_generator: PayloadGenerator = None,
+        expected_result: bool = True,
+        authentication=None,
+        execution_mode: str = "ui",
+        api_endpoint: Optional[str] = None,
+        injection_field: str = "query",
+        full_form_payload: Optional[Dict[str, Any]] = None,
+        http_method: str = "POST",
+        csrf_protection=None,
+    ):
         """
         Initialize the SQL Injection TTP.
-        
+
         Args:
             target_url: Target URL (UI mode)
             field_selector: CSS/tag selector for input field (UI mode)
@@ -46,26 +50,29 @@ class InputFieldInjector(TTP):
             http_method: HTTP method to use (API mode) - 'POST' or 'GET'
         """
         super().__init__(
-            name="SQL Injection via Input Field", 
+            name="SQL Injection via Input Field",
             description="Simulate SQL injection by injecting payloads into input fields",
             expected_result=expected_result,
             authentication=authentication,
             csrf_protection=csrf_protection,
-            execution_mode=execution_mode)
+            execution_mode=execution_mode,
+        )
 
         # UI mode fields
         self.target_url = target_url
         self.field_selector = field_selector
         self.submit_selector = submit_selector
-        
+
         # Common fields
         self.payload_generator = payload_generator
-        
+
         # API mode fields
         self.api_endpoint = api_endpoint
         self.injection_field = injection_field
         self.http_method = http_method.upper()
-        self.full_form_payload = full_form_payload
+        self.full_form_payload = (
+            full_form_payload.copy() if isinstance(full_form_payload, dict) else {}
+        )
 
     def get_payloads(self):
         """yields queries from the configured generator"""
@@ -83,7 +90,9 @@ class InputFieldInjector(TTP):
             field.send_keys(payload)
 
             try:
-                submit_button = driver.find_element(By.CSS_SELECTOR, self.submit_selector)
+                submit_button = driver.find_element(
+                    By.CSS_SELECTOR, self.submit_selector
+                )
 
                 submit_button.click()
             except NoSuchElementException:
@@ -92,130 +101,151 @@ class InputFieldInjector(TTP):
         except NoSuchElementException as e:
             raise Exception(f"could not find input field on page: {e}")
 
-
     def verify_result(self, driver: WebDriver) -> bool:
         """Checks for SQL error indicators in the page source (UI mode)."""
-        return "sql" in driver.page_source.lower() or \
-               "source" in driver.page_source.lower()
-    
-    def execute_step_api(self, session: requests.Session, payload: str, context: Dict[str, Any]) -> requests.Response:
+        return (
+            "sql" in driver.page_source.lower()
+            or "source" in driver.page_source.lower()
+        )
+
+    def execute_step_api(
+        self, session: requests.Session, payload: str, context: Dict[str, Any]
+    ) -> requests.Response:
         """
         Executes a SQL injection attempt via API request.
-        
+
         Args:
             session: requests.Session for making HTTP requests
             payload: The SQL injection payload to test
             context: Shared context dictionary
-            
+
         Returns:
             requests.Response from the injection attempt
         """
         from urllib.parse import urljoin
-        
+
         # Build the full URL
-        base_url = context.get('target_url', '')
+        base_url = context.get("target_url", "")
         if not base_url:
             raise ValueError("target_url must be set in context for API mode")
-        
-        url = urljoin(base_url, self.api_endpoint or '/search')
+
+        url = urljoin(base_url, self.api_endpoint or "/search")
 
         injectable = {self.injection_field: payload}
-        body = self.full_form_payload
+        body = self.full_form_payload.copy()
         body.update(injectable)
-                
+
         # Merge auth headers from context
         headers = {}
-        auth_headers = context.get('auth_headers', {})
+        auth_headers = context.get("auth_headers", {})
         if auth_headers:
             headers.update(auth_headers)
 
         csrf_protection = self.csrf_protection
         if isinstance(csrf_protection, CSRFProtection):
             headers, body = csrf_protection.inject_token(
-                headers=headers,
-                data=body,
-                method=self.http_method,
-                context=context
+                headers=headers, data=body, method=self.http_method, context=context
             )
 
             # Add Origin and Referer headers for CSRF validation
             # Many CSRF implementations check these headers in addition to tokens
             from urllib.parse import urlparse
+
             parsed_url = urlparse(url)
             origin = f"{parsed_url.scheme}://{parsed_url.netloc}"
             if headers is None:
                 headers = {}
-            if 'Origin' not in headers:
-                headers['Origin'] = origin
-            if 'Referer' not in headers:
-                headers['Referer'] = origin + '/'
+            if "Origin" not in headers:
+                headers["Origin"] = origin
+            if "Referer" not in headers:
+                headers["Referer"] = origin + "/"
 
             # Workaround for CSRF cookies with 'secure' flag over HTTP:
             # requests.Session won't send cookies marked as 'secure' over HTTP connections,
             # even for localhost. Browsers are lenient for localhost, but requests is strict.
             # To support local development, we manually add ALL cookies to the Cookie header.
-            if 'Cookie' not in headers:
+            if "Cookie" not in headers:
                 cookies_to_send = []
 
                 # First, try to use cookies from session (will work if no Secure flag issue)
                 for cookie_name, cookie_value in session.cookies.items():
-                    cookies_to_send.append(f'{cookie_name}={cookie_value}')
+                    cookies_to_send.append(f"{cookie_name}={cookie_value}")
 
                 # If no cookies in session, use stored cookies from initial response
                 # This handles the Secure flag over HTTP scenario
                 if not cookies_to_send:
-                    initial_cookies = context.get('initial_response_cookies', {})
+                    initial_cookies = context.get("initial_response_cookies", {})
                     for cookie_name, cookie_value in initial_cookies.items():
-                        cookies_to_send.append(f'{cookie_name}={cookie_value}')
+                        cookies_to_send.append(f"{cookie_name}={cookie_value}")
 
                 if cookies_to_send:
-                    headers['Cookie'] = '; '.join(cookies_to_send)
+                    headers["Cookie"] = "; ".join(cookies_to_send)
 
         # Honor rate limiting
         import time
-        resume_at = context.get('rate_limit_resume_at')
+
+        resume_at = context.get("rate_limit_resume_at")
         now = time.time()
         if isinstance(resume_at, (int, float)) and resume_at > now:
             wait_s = min(resume_at - now, 30)
             if wait_s > 0:
                 time.sleep(wait_s)
-        
+
         # Make the request based on HTTP method
-        if self.http_method == 'GET':
+        if self.http_method == "GET":
             # For GET, put payload in query params
-            response = session.get(url, params={self.injection_field: payload}, headers=headers or None, timeout=10.0)
+            response = session.get(
+                url,
+                params={self.injection_field: payload},
+                headers=headers or None,
+                timeout=10.0,
+            )
 
             # Extract CSRF token from response if auto-extraction is enabled
-            if isinstance(csrf_protection, CSRFProtection) and csrf_protection.auto_extract:
-                csrf_protection.extract_token(response=response, session=session, context=context)
+            if (
+                isinstance(csrf_protection, CSRFProtection)
+                and csrf_protection.auto_extract
+            ):
+                csrf_protection.extract_token(
+                    response=response, session=session, context=context
+                )
         else:
             # For POST/PUT/etc, put payload in JSON body
             body = body
-            response = session.request(self.http_method, url, json=body, headers=headers or None, timeout=10.0)
+            response = session.request(
+                self.http_method, url, json=body, headers=headers or None, timeout=10.0
+            )
 
             # Extract CSRF token from response if auto-extraction is enabled
-            if isinstance(csrf_protection, CSRFProtection) and csrf_protection.auto_extract:
-                csrf_protection.extract_token(response=response, session=session, context=context)
+            if (
+                isinstance(csrf_protection, CSRFProtection)
+                and csrf_protection.auto_extract
+            ):
+                csrf_protection.extract_token(
+                    response=response, session=session, context=context
+                )
 
         # Handle rate limiting
         if response.status_code == 429:
-            retry_after = response.headers.get('Retry-After', '1')
+            retry_after = response.headers.get("Retry-After", "1")
             try:
                 wait_s = int(retry_after)
             except (ValueError, TypeError):
                 wait_s = 1
-            context['rate_limit_resume_at'] = time.time() + min(wait_s, 30)
-        
+            context["rate_limit_resume_at"] = time.time() + min(wait_s, 30)
+
         return response
-    
-    def verify_result_api(self, response: requests.Response, context: Dict[str, Any]) -> bool:
+
+    def verify_result_api(
+        self, response: requests.Response, context: Dict[str, Any]
+    ) -> bool:
         """
         Verifies if the SQL injection attempt triggered a vulnerability.
-        
+
         Args:
             response: The response from execute_step_api
             context: Shared context dictionary
-            
+
         Returns:
             True if SQL error indicators found, False otherwise
         """
@@ -223,9 +253,21 @@ class InputFieldInjector(TTP):
             response_text = response.text.lower()
             # Common SQL error indicators
             sql_indicators = [
-                'sql', 'syntax', 'mysql', 'sqlite', 'postgresql', 'oracle',
-                'odbc', 'jdbc', 'driver', 'database', 'query', 'syntax error',
-                'unterminated', 'unexpected', 'warning: mysql'
+                "sql",
+                "syntax",
+                "mysql",
+                "sqlite",
+                "postgresql",
+                "oracle",
+                "odbc",
+                "jdbc",
+                "driver",
+                "database",
+                "query",
+                "syntax error",
+                "unterminated",
+                "unexpected",
+                "warning: mysql",
             ]
             return any(indicator in response_text for indicator in sql_indicators)
         except Exception:
@@ -235,22 +277,25 @@ class InputFieldInjector(TTP):
 class URLManipulation(TTP):
     """
     SQL Injection TTP that tests URL query parameters for SQL injection vulnerabilities.
-    
+
     Supports two execution modes:
     - UI mode: Navigates to URLs with SQL payloads in query parameters
     - API mode: Sends GET requests with SQL payloads in query parameters
     """
-    def __init__(self,
-                 payload_generator: PayloadGenerator,
-                 target_url: str = None,
-                 expected_result: bool = True,
-                 authentication=None,
-                 execution_mode: str = 'ui',
-                 api_endpoint: Optional[str] = None,
-                 query_param: str = 'q'):
+
+    def __init__(
+        self,
+        payload_generator: PayloadGenerator,
+        target_url: str = None,
+        expected_result: bool = True,
+        authentication=None,
+        execution_mode: str = "ui",
+        api_endpoint: Optional[str] = None,
+        query_param: str = "q",
+    ):
         """
         Initialize the URL Manipulation SQL Injection TTP.
-        
+
         Args:
             payload_generator: Generator that yields SQL injection payloads
             target_url: Target URL (UI mode)
@@ -261,11 +306,12 @@ class URLManipulation(TTP):
             query_param: Query parameter name to inject into (default: 'q')
         """
         super().__init__(
-            name="SQL Injection via URL manipulation", 
+            name="SQL Injection via URL manipulation",
             description="Simulate SQL injection by manipulating URL query parameters",
             expected_result=expected_result,
             authentication=authentication,
-            execution_mode=execution_mode)
+            execution_mode=execution_mode,
+        )
         self.target_url = target_url
         self.payload_generator = payload_generator
         self.api_endpoint = api_endpoint
@@ -280,67 +326,79 @@ class URLManipulation(TTP):
 
     def verify_result(self, driver: WebDriver) -> bool:
         """Check for SQL error indicators in UI mode."""
-        return "sql" in driver.page_source.lower() or \
-               "source" in driver.page_source.lower()
-    
-    def execute_step_api(self, session: requests.Session, payload: str, context: Dict[str, Any]) -> requests.Response:
+        return (
+            "sql" in driver.page_source.lower()
+            or "source" in driver.page_source.lower()
+        )
+
+    def execute_step_api(
+        self, session: requests.Session, payload: str, context: Dict[str, Any]
+    ) -> requests.Response:
         """
         Executes a SQL injection attempt via API request with query parameters.
-        
+
         Args:
             session: requests.Session for making HTTP requests
             payload: The SQL injection payload to test
             context: Shared context dictionary
-            
+
         Returns:
             requests.Response from the injection attempt
         """
         from urllib.parse import urljoin
-        
+
         # Build the full URL
-        base_url = context.get('target_url', '')
+        base_url = context.get("target_url", "")
         if not base_url:
             raise ValueError("target_url must be set in context for API mode")
-        
-        url = urljoin(base_url, self.api_endpoint or self.target_url or '/')
-        
+
+        url = urljoin(base_url, self.api_endpoint or self.target_url or "/")
+
         # Merge auth headers from context
         headers = {}
-        auth_headers = context.get('auth_headers', {})
+        auth_headers = context.get("auth_headers", {})
         if auth_headers:
             headers.update(auth_headers)
-        
+
         # Honor rate limiting
         import time
-        resume_at = context.get('rate_limit_resume_at')
+
+        resume_at = context.get("rate_limit_resume_at")
         now = time.time()
         if isinstance(resume_at, (int, float)) and resume_at > now:
             wait_s = min(resume_at - now, 30)
             if wait_s > 0:
                 time.sleep(wait_s)
-        
+
         # Make GET request with payload in query param
-        response = session.get(url, params={self.query_param: payload}, headers=headers or None, timeout=10.0)
-        
+        response = session.get(
+            url,
+            params={self.query_param: payload},
+            headers=headers or None,
+            timeout=10.0,
+        )
+
         # Handle rate limiting
         if response.status_code == 429:
-            retry_after = response.headers.get('Retry-After', '1')
+            retry_after = response.headers.get("Retry-After", "1")
             try:
                 wait_s = int(retry_after)
             except (ValueError, TypeError):
                 wait_s = 1
-            context['rate_limit_resume_at'] = time.time() + min(wait_s, 30)
-        
+            context["rate_limit_resume_at"] = time.time() + min(wait_s, 30)
+
         return response
-    
-    def verify_result_api(self, response: requests.Response, context: Dict[str, Any]) -> bool:
+
+    def verify_result_api(
+        self, response: requests.Response, context: Dict[str, Any]
+    ) -> bool:
         """
         Verifies if the SQL injection attempt triggered a vulnerability.
-        
+
         Args:
             response: The response from execute_step_api
             context: Shared context dictionary
-            
+
         Returns:
             True if SQL error indicators found, False otherwise
         """
@@ -348,9 +406,21 @@ class URLManipulation(TTP):
             response_text = response.text.lower()
             # Common SQL error indicators
             sql_indicators = [
-                'sql', 'syntax', 'mysql', 'sqlite', 'postgresql', 'oracle',
-                'odbc', 'jdbc', 'driver', 'database', 'query', 'syntax error',
-                'unterminated', 'unexpected', 'warning: mysql'
+                "sql",
+                "syntax",
+                "mysql",
+                "sqlite",
+                "postgresql",
+                "oracle",
+                "odbc",
+                "jdbc",
+                "driver",
+                "database",
+                "query",
+                "syntax error",
+                "unterminated",
+                "unexpected",
+                "warning: mysql",
             ]
             return any(indicator in response_text for indicator in sql_indicators)
         except Exception:
@@ -360,22 +430,25 @@ class URLManipulation(TTP):
 class URLPathManipulation(TTP):
     """
     SQL Injection TTP that tests URL query parameters for SQL injection vulnerabilities.
-    
+
     Supports two execution modes:
     - UI mode: Navigates to URLs with SQL payloads in query parameters
     - API mode: Sends GET requests with SQL payloads in query parameters
     """
-    def __init__(self,
-                 payload_generator: PayloadGenerator,
-                 target_url: str = None,
-                 expected_result: bool = True,
-                 authentication=None,
-                 execution_mode: str = 'ui',
-                 api_endpoint: Optional[str] = None,
-                 param: str = None):
+
+    def __init__(
+        self,
+        payload_generator: PayloadGenerator,
+        target_url: str = None,
+        expected_result: bool = True,
+        authentication=None,
+        execution_mode: str = "ui",
+        api_endpoint: Optional[str] = None,
+        param: str = None,
+    ):
         """
         Initialize the URL Manipulation SQL Injection TTP.
-        
+
         Args:
             payload_generator: Generator that yields SQL injection payloads
             target_url: Target URL (UI mode)
@@ -386,11 +459,12 @@ class URLPathManipulation(TTP):
             param: parameter name to inject into
         """
         super().__init__(
-            name="SQL Injection via URL manipulation", 
+            name="SQL Injection via URL manipulation",
             description="Simulate SQL injection by manipulating URL query parameters",
             expected_result=expected_result,
             authentication=authentication,
-            execution_mode=execution_mode)
+            execution_mode=execution_mode,
+        )
         self.target_url = target_url
         self.payload_generator = payload_generator
         self.api_endpoint = api_endpoint
@@ -406,69 +480,75 @@ class URLPathManipulation(TTP):
 
     def verify_result(self, driver: WebDriver) -> bool:
         """Check for SQL error indicators in UI mode."""
-        return "sql" in driver.page_source.lower() or \
-               "source" in driver.page_source.lower()
-    
-    def execute_step_api(self, session: requests.Session, payload: str, context: Dict[str, Any]) -> requests.Response:
+        return (
+            "sql" in driver.page_source.lower()
+            or "source" in driver.page_source.lower()
+        )
+
+    def execute_step_api(
+        self, session: requests.Session, payload: str, context: Dict[str, Any]
+    ) -> requests.Response:
         """
         Executes a SQL injection attempt via API request with query parameters.
-        
+
         Args:
             session: requests.Session for making HTTP requests
             payload: The SQL injection payload to test
             context: Shared context dictionary
-            
+
         Returns:
             requests.Response from the injection attempt
         """
         from urllib.parse import urljoin
-        
+
         # Build the full URL
-        base_url = context.get('target_url', '')
+        base_url = context.get("target_url", "")
         if not base_url:
             raise ValueError("target_url must be set in context for API mode")
-        
 
         uri = self.api_endpoint.replace(self.param, payload)
-        url = urljoin(base_url, uri or self.target_url or '/')
-        
+        url = urljoin(base_url, uri or self.target_url or "/")
+
         # Merge auth headers from context
         headers = {}
-        auth_headers = context.get('auth_headers', {})
+        auth_headers = context.get("auth_headers", {})
         if auth_headers:
             headers.update(auth_headers)
-        
+
         # Honor rate limiting
         import time
-        resume_at = context.get('rate_limit_resume_at')
+
+        resume_at = context.get("rate_limit_resume_at")
         now = time.time()
         if isinstance(resume_at, (int, float)) and resume_at > now:
             wait_s = min(resume_at - now, 30)
             if wait_s > 0:
                 time.sleep(wait_s)
-        
+
         # Make GET request with payload in query param
         response = session.get(url, headers=headers or None, timeout=10.0)
-        
+
         # Handle rate limiting
         if response.status_code == 429:
-            retry_after = response.headers.get('Retry-After', '1')
+            retry_after = response.headers.get("Retry-After", "1")
             try:
                 wait_s = int(retry_after)
             except (ValueError, TypeError):
                 wait_s = 1
-            context['rate_limit_resume_at'] = time.time() + min(wait_s, 30)
-        
+            context["rate_limit_resume_at"] = time.time() + min(wait_s, 30)
+
         return response
-    
-    def verify_result_api(self, response: requests.Response, context: Dict[str, Any]) -> bool:
+
+    def verify_result_api(
+        self, response: requests.Response, context: Dict[str, Any]
+    ) -> bool:
         """
         Verifies if the SQL injection attempt triggered a vulnerability.
-        
+
         Args:
             response: The response from execute_step_api
             context: Shared context dictionary
-            
+
         Returns:
             True if SQL error indicators found, False otherwise
         """
@@ -476,9 +556,21 @@ class URLPathManipulation(TTP):
             response_text = response.text.lower()
             # Common SQL error indicators
             sql_indicators = [
-                'sql', 'syntax', 'mysql', 'sqlite', 'postgresql', 'oracle',
-                'odbc', 'jdbc', 'driver', 'database', 'query', 'syntax error',
-                'unterminated', 'unexpected', 'warning: mysql'
+                "sql",
+                "syntax",
+                "mysql",
+                "sqlite",
+                "postgresql",
+                "oracle",
+                "odbc",
+                "jdbc",
+                "driver",
+                "database",
+                "query",
+                "syntax error",
+                "unterminated",
+                "unexpected",
+                "warning: mysql",
             ]
             return any(indicator in response_text for indicator in sql_indicators)
         except Exception:
