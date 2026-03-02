@@ -88,6 +88,14 @@ Scythe is a powerful Python-based framework designed for testing applications un
   - Contributing guidelines
   - Advanced integration patterns
 
+- **[AI Test Authoring Contract](AI_TEST_AUTHORING.md)** - Canonical script structure for AI-generated tests
+  - Required functions and fields
+  - Template kinds and intent mapping (`scythe new --kind ...`, `--from-intent`)
+  - Validator diagnostics (`scythe check --json`, `--strict`, `--fix`)
+  - Local fixture profiles (`scythe fixture serve --profile ...`)
+  - Route discovery, snippet lookup, and doctor diagnostics commands
+  - Recommended authoring loop
+
 ## 🚀 Quick Start Examples
 
 ### Security Testing

@@ -49,42 +49,44 @@ class CookieJWTAuth(Authentication):
     Hybrid authentication where a JWT is acquired from an API login response and
     then used as a cookie for subsequent requests. Useful when the target server
     expects a cookie (e.g., "stellarbridge") instead of Authorization headers.
-    
+
     Behavior:
     - In API mode: JourneyExecutor will call get_auth_cookies(); this class will
-      perform a POST to login_url (if token not cached), extract the token, and 
+      perform a POST to login_url (if token not cached), extract the token, and
       return {cookie_name: token}.
     - In UI mode: authenticate() will ensure the browser has the cookie set for
       the target domain.
-    
+
     Parameters:
-    - content_type: Either "json" (default) to send payload as JSON, or "form" 
+    - content_type: Either "json" (default) to send payload as JSON, or "form"
       to send as application/x-www-form-urlencoded form data.
     - jwt_source: Either "json" (default) to extract JWT from the JSON response body
       using jwt_json_path, or "cookie" to extract it from the Set-Cookie response header
       using cookie_name.
     """
 
-    def __init__(self,
-                 login_url: str,
-                 username: Optional[str] = None,
-                 password: Optional[str] = None,
-                 username_field: str = "email",
-                 password_field: str = "password",
-                 extra_fields: Optional[Dict[str, Any]] = None,
-                 jwt_json_path: str = "token",
-                 cookie_name: str = "stellarbridge",
-                 content_type: str = "json",
-                 jwt_source: str = "json",
-                 session: Optional[requests.Session] = None,
-                 description: str = "Authenticate via API and set JWT cookie",
-                 csrf_protection: Optional['CSRFProtection'] = None,
-                 session_endpoint: Optional[str] = None):
+    def __init__(
+        self,
+        login_url: str,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        username_field: str = "email",
+        password_field: str = "password",
+        extra_fields: Optional[Dict[str, Any]] = None,
+        jwt_json_path: str = "token",
+        cookie_name: str = "stellarbridge",
+        content_type: str = "json",
+        jwt_source: str = "json",
+        session: Optional[requests.Session] = None,
+        description: str = "Authenticate via API and set JWT cookie",
+        csrf_protection: Optional["CSRFProtection"] = None,
+        session_endpoint: Optional[str] = None,
+    ):
         super().__init__(
             name="Cookie JWT Authentication",
             description=description,
             csrf_protection=csrf_protection,
-            session_endpoint=session_endpoint
+            session_endpoint=session_endpoint,
         )
         self.login_url = login_url
         self.username = username
@@ -97,7 +99,9 @@ class CookieJWTAuth(Authentication):
         self.content_type = content_type
         self.jwt_source = jwt_source
         # Avoid importing requests in test environments; allow injected session
-        self._session = session or (requests.Session() if requests is not None else None)
+        self._session = session or (
+            requests.Session() if requests is not None else None
+        )
         self.token: Optional[str] = None
 
     def _login_and_get_token(self) -> str:
@@ -113,14 +117,14 @@ class CookieJWTAuth(Authentication):
             # Use session_endpoint if available (to get fresh session + CSRF)
             # Otherwise use login_url
             # Important: Only make ONE GET request to avoid regenerating tokens
-            csrf_endpoint = self.session_endpoint if self.session_endpoint else self.login_url
+            csrf_endpoint = (
+                self.session_endpoint if self.session_endpoint else self.login_url
+            )
             try:
                 resp = self._session.get(csrf_endpoint, timeout=15)
                 # Extract CSRF token from the GET response
                 self.csrf_protection.extract_token(
-                    response=resp,
-                    session=self._session,
-                    context=context
+                    response=resp, session=self._session, context=context
                 )
             except Exception as e:
                 raise AuthenticationError(f"Failed to get CSRF token: {e}", self.name)
@@ -129,7 +133,10 @@ class CookieJWTAuth(Authentication):
             try:
                 self._session.get(self.session_endpoint, timeout=15)
             except Exception as e:
-                raise AuthenticationError(f"Failed to establish session at {self.session_endpoint}: {e}", self.name)
+                raise AuthenticationError(
+                    f"Failed to establish session at {self.session_endpoint}: {e}",
+                    self.name,
+                )
 
         payload: Dict[str, Any] = dict(self.extra_fields)
         payload[self.username_field] = self.username
@@ -140,10 +147,7 @@ class CookieJWTAuth(Authentication):
             from urllib.parse import urlparse
 
             headers, payload = self.csrf_protection.inject_token(
-                headers=headers,
-                data=payload,
-                method='POST',
-                context=context
+                headers=headers, data=payload, method="POST", context=context
             )
 
             # Add Origin header for CSRF validation
@@ -153,10 +157,10 @@ class CookieJWTAuth(Authentication):
             origin = f"{parsed_url.scheme}://{parsed_url.netloc}"
             if headers is None:
                 headers = {}
-            if 'Origin' not in headers:
-                headers['Origin'] = origin
-            if 'Referer' not in headers:
-                headers['Referer'] = origin + '/'
+            if "Origin" not in headers:
+                headers["Origin"] = origin
+            if "Referer" not in headers:
+                headers["Referer"] = origin + "/"
 
         # Workaround for CSRF cookies with 'secure' flag over HTTP:
         # requests.Session won't send cookies marked as 'secure' over HTTP connections,
@@ -172,23 +176,17 @@ class CookieJWTAuth(Authentication):
                 # Manually add Cookie header
                 if headers is None:
                     headers = {}
-                if 'Cookie' not in headers:
-                    headers['Cookie'] = f'{csrf_cookie_name}={csrf_cookie_value}'
+                if "Cookie" not in headers:
+                    headers["Cookie"] = f"{csrf_cookie_name}={csrf_cookie_value}"
 
         try:
             if self.content_type == "form":
                 resp = self._session.post(
-                    self.login_url,
-                    data=payload,
-                    headers=headers or None,
-                    timeout=15
+                    self.login_url, data=payload, headers=headers or None, timeout=15
                 )
             else:
                 resp = self._session.post(
-                    self.login_url,
-                    json=payload,
-                    headers=headers or None,
-                    timeout=15
+                    self.login_url, json=payload, headers=headers or None, timeout=15
                 )
             # try json; raise on non-2xx to surface errors
             resp.raise_for_status()
@@ -196,11 +194,12 @@ class CookieJWTAuth(Authentication):
             raise AuthenticationError(f"Login request failed: {e}", self.name)
 
         # Extract updated CSRF token from response if auto-extraction enabled
-        if isinstance(self.csrf_protection, CSRFProtection) and self.csrf_protection.auto_extract:
+        if (
+            isinstance(self.csrf_protection, CSRFProtection)
+            and self.csrf_protection.auto_extract
+        ):
             self.csrf_protection.extract_token(
-                response=resp,
-                session=self._session,
-                context=context
+                response=resp, session=self._session, context=context
             )
 
         # Extract token from either response cookies or JSON body
@@ -218,7 +217,9 @@ class CookieJWTAuth(Authentication):
             try:
                 data = resp.json()
             except Exception as e:
-                raise AuthenticationError(f"Failed to parse JSON response: {e}", self.name)
+                raise AuthenticationError(
+                    f"Failed to parse JSON response: {e}", self.name
+                )
             token = _extract_by_dot_path(data, self.jwt_json_path)
             if not token or not isinstance(token, str):
                 raise AuthenticationError(
@@ -227,8 +228,8 @@ class CookieJWTAuth(Authentication):
                 )
 
         self.token = token
-        self.store_auth_data('jwt', token)
-        self.store_auth_data('login_time', time.time())
+        self.store_auth_data("jwt", token)
+        self.store_auth_data("login_time", time.time())
         return token
 
     def get_auth_cookies(self) -> Dict[str, str]:
@@ -249,51 +250,56 @@ class CookieJWTAuth(Authentication):
         Also includes Cookie header when cookies may not be sent automatically
         (e.g., HTTP with secure flag, or domain mismatch issues).
         """
-        # Ensure we're authenticated first (triggers login if needed)
+        # Import here to avoid circular imports
+        from ..core.csrf import CSRFProtection
+
+        # No CSRF protection configured: no auth headers are needed.
+        # Keep this side-effect free so callers/tests can ask for headers
+        # without triggering a network login.
+        if not isinstance(self.csrf_protection, CSRFProtection):
+            return {}
+
+        # Ensure we're authenticated first when CSRF headers are requested.
         if not self.token:
             self._login_and_get_token()
 
         headers = {}
 
-        # Import here to avoid circular imports
-        from ..core.csrf import CSRFProtection
-
         # If CSRF protection is configured, inject CSRF header
-        if isinstance(self.csrf_protection, CSRFProtection):
-            # Get the current CSRF token from the session or internal state
-            csrf_token = self.csrf_protection.get_token()
-            if csrf_token:
-                # Inject the token into headers (typically as X-CSRF-Token or similar)
-                headers_with_csrf, _ = self.csrf_protection.inject_token(
-                    headers=headers,
-                    data=None,
-                    method='POST',  # Use POST to trigger injection
-                    context=None
-                )
-                if headers_with_csrf:
-                    headers = headers_with_csrf
+        # Get the current CSRF token from the session or internal state
+        csrf_token = self.csrf_protection.get_token()
+        if csrf_token:
+            # Inject the token into headers (typically as X-CSRF-Token or similar)
+            headers_with_csrf, _ = self.csrf_protection.inject_token(
+                headers=headers,
+                data=None,
+                method="POST",  # Use POST to trigger injection
+                context=None,
+            )
+            if headers_with_csrf:
+                headers = headers_with_csrf
 
-            # Workaround: Manually add cookies to Cookie header
-            # This handles both HTTP (where secure cookies won't be sent) and
-            # potential domain mismatch issues
-            if self._session:
-                # Build a list of cookies to include
-                cookies_to_send = []
+        # Workaround: Manually add cookies to Cookie header
+        # This handles both HTTP (where secure cookies won't be sent) and
+        # potential domain mismatch issues
+        if self._session:
+            # Build a list of cookies to include
+            cookies_to_send = []
 
-                # Add CSRF cookie
-                csrf_cookie_name = self.csrf_protection.cookie_name
-                if csrf_cookie_name in self._session.cookies:
-                    csrf_cookie_value = self._session.cookies.get(csrf_cookie_name)
-                    cookies_to_send.append(f'{csrf_cookie_name}={csrf_cookie_value}')
+            # Add CSRF cookie
+            csrf_cookie_name = self.csrf_protection.cookie_name
+            if csrf_cookie_name in self._session.cookies:
+                csrf_cookie_value = self._session.cookies.get(csrf_cookie_name)
+                cookies_to_send.append(f"{csrf_cookie_name}={csrf_cookie_value}")
 
-                # Add JWT cookie (stellarbridge or whatever cookie_name is configured)
-                if self.cookie_name in self._session.cookies:
-                    jwt_cookie_value = self._session.cookies.get(self.cookie_name)
-                    cookies_to_send.append(f'{self.cookie_name}={jwt_cookie_value}')
+            # Add JWT cookie (stellarbridge or whatever cookie_name is configured)
+            if self.cookie_name in self._session.cookies:
+                jwt_cookie_value = self._session.cookies.get(self.cookie_name)
+                cookies_to_send.append(f"{self.cookie_name}={jwt_cookie_value}")
 
-                # Set the Cookie header with all cookies
-                if cookies_to_send:
-                    headers['Cookie'] = '; '.join(cookies_to_send)
+            # Set the Cookie header with all cookies
+            if cookies_to_send:
+                headers["Cookie"] = "; ".join(cookies_to_send)
 
         return headers
 
@@ -315,13 +321,13 @@ class CookieJWTAuth(Authentication):
             except Exception:
                 pass
             cookie_dict = {
-                'name': self.cookie_name,
-                'value': self.token,
-                'path': '/',
+                "name": self.cookie_name,
+                "value": self.token,
+                "path": "/",
             }
             # If domain available, set explicitly to be safe
             if parsed.netloc:
-                cookie_dict['domain'] = parsed.hostname or parsed.netloc
+                cookie_dict["domain"] = parsed.hostname or parsed.netloc
             driver.add_cookie(cookie_dict)
             self.authenticated = True
             return True

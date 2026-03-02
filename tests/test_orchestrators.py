@@ -28,7 +28,12 @@ class MockTTP(TTP):
         expected_result: bool = True,
         success_results=None,
     ):
-        super().__init__(name, description, expected_result)
+        super().__init__(
+            name,
+            description,
+            expected_result,
+            execution_mode="api",
+        )
         self.success_results = (
             success_results if success_results is not None else [True]
         )
@@ -42,6 +47,24 @@ class MockTTP(TTP):
         pass
 
     def verify_result(self, driver):
+        if self.current_step < len(self.success_results):
+            result = self.success_results[self.current_step]
+            self.current_step += 1
+            return result
+        return False
+
+    def execute_step_api(self, session, payload, context):
+        class _Response:
+            status_code = 200
+            text = '{"ok": true}'
+
+            def __init__(self, url):
+                self.url = url
+                self.headers = {"X-SCYTHE-TARGET-VERSION": "1.0.0"}
+
+        return _Response(context.get("target_url", "http://test.com"))
+
+    def verify_result_api(self, response, context):
         if self.current_step < len(self.success_results):
             result = self.success_results[self.current_step]
             self.current_step += 1

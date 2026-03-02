@@ -6,51 +6,62 @@ import types
 
 # Provide minimal shims if dependencies are not installed
 # requests shim
-if 'requests' not in sys.modules:
-    requests_mod = types.ModuleType('requests')
+try:
+    import requests  # noqa: F401
+except Exception:
+    requests_mod = types.ModuleType("requests")
+
     class _Session:
         pass
+
     requests_mod.Session = _Session
-    sys.modules['requests'] = requests_mod
+    sys.modules["requests"] = requests_mod
 
 # Provide a minimal selenium shim if selenium is not installed
-if 'selenium' not in sys.modules:
-    selenium_mod = types.ModuleType('selenium')
-    webdriver_mod = types.ModuleType('selenium.webdriver')
-    chrome_mod = types.ModuleType('selenium.webdriver.chrome')
-    options_mod = types.ModuleType('selenium.webdriver.chrome.options')
-    remote_mod = types.ModuleType('selenium.webdriver.remote')
-    remote_webdriver_mod = types.ModuleType('selenium.webdriver.remote.webdriver')
-    common_mod = types.ModuleType('selenium.webdriver.common')
-    common_by_mod = types.ModuleType('selenium.webdriver.common.by')
-    selenium_common_mod = types.ModuleType('selenium.common')
-    selenium_common_ex_mod = types.ModuleType('selenium.common.exceptions')
-    support_mod = types.ModuleType('selenium.webdriver.support')
-    support_ui_mod = types.ModuleType('selenium.webdriver.support.ui')
-    support_ec_mod = types.ModuleType('selenium.webdriver.support.expected_conditions')
+try:
+    import selenium  # noqa: F401
+except Exception:
+    selenium_mod = types.ModuleType("selenium")
+    webdriver_mod = types.ModuleType("selenium.webdriver")
+    chrome_mod = types.ModuleType("selenium.webdriver.chrome")
+    options_mod = types.ModuleType("selenium.webdriver.chrome.options")
+    remote_mod = types.ModuleType("selenium.webdriver.remote")
+    remote_webdriver_mod = types.ModuleType("selenium.webdriver.remote.webdriver")
+    common_mod = types.ModuleType("selenium.webdriver.common")
+    common_by_mod = types.ModuleType("selenium.webdriver.common.by")
+    selenium_common_mod = types.ModuleType("selenium.common")
+    selenium_common_ex_mod = types.ModuleType("selenium.common.exceptions")
+    support_mod = types.ModuleType("selenium.webdriver.support")
+    support_ui_mod = types.ModuleType("selenium.webdriver.support.ui")
+    support_ec_mod = types.ModuleType("selenium.webdriver.support.expected_conditions")
 
     class _Options:  # placeholder Options
         def __init__(self):
             pass
+
     options_mod.Options = _Options
 
     class _WebDriver:  # minimal placeholder to satisfy type import
         pass
+
     remote_webdriver_mod.WebDriver = _WebDriver
 
     class _By:
-        ID = 'id'
-        XPATH = 'xpath'
-        CSS_SELECTOR = 'css selector'
-        NAME = 'name'
-        CLASS_NAME = 'class name'
-        TAG_NAME = 'tag name'
+        ID = "id"
+        XPATH = "xpath"
+        CSS_SELECTOR = "css selector"
+        NAME = "name"
+        CLASS_NAME = "class name"
+        TAG_NAME = "tag name"
+
     common_by_mod.By = _By
 
     class _NoSuchElementException(Exception):
         pass
+
     class _TimeoutException(Exception):
         pass
+
     selenium_common_ex_mod.NoSuchElementException = _NoSuchElementException
     selenium_common_ex_mod.TimeoutException = _TimeoutException
 
@@ -59,31 +70,34 @@ if 'selenium' not in sys.modules:
         @staticmethod
         def element_to_be_clickable(locator):
             return True
-    support_ec_mod = types.ModuleType('selenium.webdriver.support.expected_conditions')
+
+    support_ec_mod = types.ModuleType("selenium.webdriver.support.expected_conditions")
     support_ec_mod.element_to_be_clickable = _EC.element_to_be_clickable
 
     class _WebDriverWait:
         def __init__(self, driver, timeout):
             pass
+
         def until(self, method):
             return Mock()
-    support_ui_mod = types.ModuleType('selenium.webdriver.support.ui')
-    support_ui_mod.WebDriverWait = _WebDriverWait
-    support_mod = types.ModuleType('selenium.webdriver.support')
 
-    sys.modules['selenium'] = selenium_mod
-    sys.modules['selenium.webdriver'] = webdriver_mod
-    sys.modules['selenium.webdriver.chrome'] = chrome_mod
-    sys.modules['selenium.webdriver.chrome.options'] = options_mod
-    sys.modules['selenium.webdriver.remote'] = remote_mod
-    sys.modules['selenium.webdriver.remote.webdriver'] = remote_webdriver_mod
-    sys.modules['selenium.webdriver.common'] = common_mod
-    sys.modules['selenium.webdriver.common.by'] = common_by_mod
-    sys.modules['selenium.webdriver.support'] = support_mod
-    sys.modules['selenium.webdriver.support.ui'] = support_ui_mod
-    sys.modules['selenium.webdriver.support.expected_conditions'] = support_ec_mod
-    sys.modules['selenium.common'] = selenium_common_mod
-    sys.modules['selenium.common.exceptions'] = selenium_common_ex_mod
+    support_ui_mod = types.ModuleType("selenium.webdriver.support.ui")
+    support_ui_mod.WebDriverWait = _WebDriverWait
+    support_mod = types.ModuleType("selenium.webdriver.support")
+
+    sys.modules["selenium"] = selenium_mod
+    sys.modules["selenium.webdriver"] = webdriver_mod
+    sys.modules["selenium.webdriver.chrome"] = chrome_mod
+    sys.modules["selenium.webdriver.chrome.options"] = options_mod
+    sys.modules["selenium.webdriver.remote"] = remote_mod
+    sys.modules["selenium.webdriver.remote.webdriver"] = remote_webdriver_mod
+    sys.modules["selenium.webdriver.common"] = common_mod
+    sys.modules["selenium.webdriver.common.by"] = common_by_mod
+    sys.modules["selenium.webdriver.support"] = support_mod
+    sys.modules["selenium.webdriver.support.ui"] = support_ui_mod
+    sys.modules["selenium.webdriver.support.expected_conditions"] = support_ec_mod
+    sys.modules["selenium.common"] = selenium_common_mod
+    sys.modules["selenium.common.exceptions"] = selenium_common_ex_mod
 
 from scythe.auth.cookie_jwt import CookieJWTAuth
 
@@ -134,7 +148,13 @@ class _FakeRequestsSession:
         self._json: Optional[Dict[str, Any]] = None
 
     class _Resp:
-        def __init__(self, status_code: int, headers: Dict[str, str], text: str, json_body: Optional[Dict[str, Any]]):
+        def __init__(
+            self,
+            status_code: int,
+            headers: Dict[str, str],
+            text: str,
+            json_body: Optional[Dict[str, Any]],
+        ):
             self.status_code = status_code
             self.headers = headers
             self.text = text
@@ -149,15 +169,17 @@ class _FakeRequestsSession:
                 raise ValueError("No JSON body")
             return self._json
 
-    def request(self, method, url, params=None, json=None, data=None, headers=None, timeout=None):
+    def request(
+        self, method, url, params=None, json=None, data=None, headers=None, timeout=None
+    ):
         # Record request for assertions
         self._last_request = {
-            'method': method,
-            'url': url,
-            'headers': headers or {},
-            'params': params or {},
-            'json': json,
-            'data': data,
+            "method": method,
+            "url": url,
+            "headers": headers or {},
+            "params": params or {},
+            "json": json,
+            "data": data,
         }
         return self._Resp(self._status, {}, self._text, self._json)
 
@@ -192,13 +214,14 @@ class TestCookieJWTAuth(unittest.TestCase):
             session=fake_login,
         )
         driver = Mock()
-        result = auth.authenticate(driver, target_url="http://app.example.com/protected")
+        result = auth.authenticate(
+            driver, target_url="http://app.example.com/protected"
+        )
         self.assertTrue(result)
         # add_cookie called with correct name and value
         called_args = driver.add_cookie.call_args[0][0]
         self.assertEqual(called_args["name"], "stellarbridge")
         self.assertEqual(called_args["value"], "XYZ")
-
 
 
 if __name__ == "__main__":

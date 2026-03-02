@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 import sys
 import os
+import types
 
 # Add the scythe package to the path for testing
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -19,15 +20,49 @@ class CustomPayloadGenerator(PayloadGenerator):
         yield from self.payloads
 
 
-# Mock selenium to avoid import errors
-sys.modules["selenium"] = Mock()
-sys.modules["selenium.webdriver"] = Mock()
-sys.modules["selenium.webdriver.common"] = Mock()
-sys.modules["selenium.webdriver.common.by"] = Mock()
-sys.modules["selenium.webdriver.remote"] = Mock()
-sys.modules["selenium.webdriver.remote.webdriver"] = Mock()
-sys.modules["selenium.common"] = Mock()
-sys.modules["selenium.common.exceptions"] = Mock()
+# Provide minimal selenium shims only when selenium is unavailable.
+try:
+    import selenium  # noqa: F401
+except Exception:
+    selenium_mod = types.ModuleType("selenium")
+    webdriver_mod = types.ModuleType("selenium.webdriver")
+    common_mod = types.ModuleType("selenium.webdriver.common")
+    common_by_mod = types.ModuleType("selenium.webdriver.common.by")
+    remote_mod = types.ModuleType("selenium.webdriver.remote")
+    remote_webdriver_mod = types.ModuleType("selenium.webdriver.remote.webdriver")
+    selenium_common_mod = types.ModuleType("selenium.common")
+    selenium_common_ex_mod = types.ModuleType("selenium.common.exceptions")
+
+    class _By:
+        ID = "id"
+        XPATH = "xpath"
+        CSS_SELECTOR = "css selector"
+        NAME = "name"
+        CLASS_NAME = "class name"
+        TAG_NAME = "tag name"
+
+    class _WebDriver:
+        pass
+
+    class _NoSuchElementException(Exception):
+        pass
+
+    class _TimeoutException(Exception):
+        pass
+
+    common_by_mod.By = _By
+    remote_webdriver_mod.WebDriver = _WebDriver
+    selenium_common_ex_mod.NoSuchElementException = _NoSuchElementException
+    selenium_common_ex_mod.TimeoutException = _TimeoutException
+
+    sys.modules["selenium"] = selenium_mod
+    sys.modules["selenium.webdriver"] = webdriver_mod
+    sys.modules["selenium.webdriver.common"] = common_mod
+    sys.modules["selenium.webdriver.common.by"] = common_by_mod
+    sys.modules["selenium.webdriver.remote"] = remote_mod
+    sys.modules["selenium.webdriver.remote.webdriver"] = remote_webdriver_mod
+    sys.modules["selenium.common"] = selenium_common_mod
+    sys.modules["selenium.common.exceptions"] = selenium_common_ex_mod
 
 from scythe.ttps.web.request_flooding import RequestFloodingTTP
 

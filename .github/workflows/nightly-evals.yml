@@ -1,0 +1,32 @@
+name: Nightly AI Evals
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  nightly-evals:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Run eval harness
+        run: python -m scythe.evals.harness --output artifacts/evals/nightly.json
+
+      - name: Upload eval artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-ai-evals
+          path: artifacts/evals/nightly.json

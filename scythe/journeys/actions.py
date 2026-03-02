@@ -932,6 +932,32 @@ class ApiRequestAction(Action):
                 method=self.method,
                 context=context,
             )
+
+            # Some CSRF middleware also validates Referer for unsafe methods.
+            # If we are injecting a CSRF header and caller did not provide one,
+            # derive a same-origin Referer from target_url to emulate browser requests.
+            try:
+                if isinstance(headers, dict):
+                    csrf_header_name = (csrf_protection.header_name or "").lower()
+                    has_csrf_header = any(
+                        isinstance(k, str) and k.lower() == csrf_header_name
+                        for k in headers.keys()
+                    )
+                    has_referer = any(
+                        isinstance(k, str) and k.lower() == "referer"
+                        for k in headers.keys()
+                    )
+                    if has_csrf_header and not has_referer:
+                        referer_base = context.get("target_url")
+                        if isinstance(referer_base, str) and referer_base:
+                            if not referer_base.lower().startswith(
+                                ("http://", "https://")
+                            ):
+                                referer_base = f"http://{referer_base}"
+                            headers["Referer"] = referer_base.rstrip("/") + "/"
+            except Exception:
+                pass
+
             return headers, data, body_json
 
         final_headers, request_data, request_body_json = _inject_csrf_token(

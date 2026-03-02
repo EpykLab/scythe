@@ -1,0 +1,61 @@
+{
+  "name": "minimal",
+  "login": {
+    "path": "/api/v1/auth/login-handler",
+    "username_field": "email",
+    "password_field": "password"
+  },
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/",
+      "response": {"status": 200, "json": {"service": "scythe-fixture", "status": "ok"}}
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/pricing",
+      "response": {"status": 200, "json": {"plan": "free", "currency": "USD"}}
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "auth": {
+        "required": true,
+        "authenticated": {"status": 200, "json": {"email": "$username"}},
+        "unauthenticated": {"status": 401, "json": {"error": "unauthorized"}}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard/security/mfa-enforcement",
+      "auth": {
+        "required": true,
+        "authenticated": {"status": 403, "json": {"error": "mfa_required"}},
+        "unauthenticated": {"status": 401, "json": {"error": "unauthorized"}}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard/organization/user-org-info",
+      "auth": {
+        "required": true,
+        "authenticated": {"status": 200, "json": {"org_id": "fixture-org", "role": "member"}},
+        "unauthenticated": {"status": 401, "json": {"error": "unauthorized"}}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/dashboard/organization/users",
+      "auth": {
+        "required": true,
+        "authenticated": {"status": 403, "json": {"error": "forbidden"}},
+        "unauthenticated": {"status": 401, "json": {"error": "unauthorized"}}
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/public/download/info/fixture-transfer-id",
+      "response": {"status": 401, "json": {"error": "unauthorized"}}
+    }
+  ]
+}

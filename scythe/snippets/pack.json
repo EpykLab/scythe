@@ -1,0 +1,22 @@
+{
+  "snippets": [
+    {
+      "id": "csrf-cookie-header",
+      "title": "CSRF cookie to header wiring",
+      "tags": ["csrf", "cookie", "header"],
+      "content": "csrf = CSRFProtection(extract_from='cookie', cookie_name='__Host-csrf_', header_name='X-Csrf-Token', inject_into='header')"
+    },
+    {
+      "id": "cookie-jwt-auth",
+      "title": "Cookie JWT auth setup",
+      "tags": ["auth", "cookie", "jwt", "login"],
+      "content": "auth = CookieJWTAuth(login_url=f\"{args.url}/api/v1/auth/login-handler\", username_field='email', password_field='password', username=args.username, password=args.password, cookie_name='stellarbridge', jwt_source='cookie', content_type='json', csrf_protection=csrf, session_endpoint=f\"{args.url}/\")"
+    },
+    {
+      "id": "private-route-assert",
+      "title": "Private route should require authentication",
+      "tags": ["private", "authz", "route"],
+      "content": "ApiRequestAction(method='GET', url='/api/v1/auth/me', expected_status=401, expected_result=True)"
+    }
+  ]
+}

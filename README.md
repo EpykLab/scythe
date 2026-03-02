@@ -1197,9 +1197,40 @@ Note: The CLI is implemented with Typer, so `scythe --help` and per-command help
 
 - scythe new <name>
   - Creates a new test template at ./.scythe/scythe_tests/<name>.py and registers it in the DB (tests table).
+  - `--from-intent --intent "..."` selects a template kind using local deterministic rules.
+  - `--json` emits machine-readable template selection details.
+  - Supports template archetypes with `--kind`:
+    - `api-journey` (default)
+    - `api-auth-journey`
+    - `ttp-api`
+    - `sb-route-matrix`
+    - `sb-mfa-gate`
+    - `sb-org-rbac`
 
 - scythe run <name or name.py>
   - Runs the specified test from ./.scythe/scythe_tests and records the run into the DB (runs table). Exit code reflects success (0) or failure (non-zero).
+  - `--json` emits machine-readable run diagnostics.
+
+- scythe check <name or path> [--json]
+  - Validates test structure (required functions, COMPATIBLE_VERSIONS, parser URL arg, etc.).
+  - Returns exit code 0 when valid, 1 when invalid.
+  - `--json` emits machine-readable diagnostics for AI/tooling.
+  - `--strict` treats warnings as failures.
+  - `--fix` applies safe deterministic auto-fixes, then revalidates.
+
+- scythe fixture serve [options]
+  - Runs a deterministic local HTTP target for fast AI/human iteration.
+  - Exposes stable auth, CSRF cookie, and representative API routes.
+  - Supports `--profile`, `--profile-file`, and `--list-profiles`.
+
+- scythe discover routes --openapi <file-or-url> [--probe-base-url URL] [--json]
+  - Discovers endpoints from OpenAPI first and optionally probes live reachability.
+
+- scythe snippet lookup [query] [--show ID] [--json]
+  - Looks up known-good, tagged authoring snippets.
+
+- scythe doctor ai [--json]
+  - Runs local AI-authoring readiness checks with actionable hints.
 
 - scythe db dump
   - Prints a JSON dump of the tests and runs tables from ./.scythe/scythe.db.
@@ -1209,41 +1240,50 @@ Note: The CLI is implemented with Typer, so `scythe --help` and per-command help
 
 ### Test template
 
-Created tests use a minimal template so you can start quickly:
+Created tests use structured templates with a canonical contract so they are easier for humans and AI tools to edit safely.
 
-```python
-#!/usr/bin/env python3
+You can generate specific archetypes:
 
-# scythe test initial template
-
-import argparse
-import os
-import sys
-import time
-from typing import List, Tuple
-
-# Scythe framework imports
-from scythe.core.executor import TTPExecutor
-from scythe.behaviors import HumanBehavior
-
-
-def scythe_test_definition(args):
-    # TODO: implement your test using Scythe primitives.
-    return True
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Scythe test script")
-    parser.add_argument('--url', help='Target URL (overridden by localhost unless FORCE_USE_CLI_URL=1)')
-    args = parser.parse_args()
-
-    ok = scythe_test_definition(args)
-    sys.exit(0 if ok else 1)
-
-
-if __name__ == "__main__":
-    main()
+```bash
+scythe new route_access_test --kind api-journey
+scythe new generated_from_intent --from-intent --intent "test org rbac access" --json
+scythe new authz_test --kind api-auth-journey
+scythe new bruteforce_test --kind ttp-api
+scythe new stellarbridge_route_matrix --kind sb-route-matrix
+scythe new stellarbridge_mfa_gate --kind sb-mfa-gate
+scythe new stellarbridge_org_rbac --kind sb-org-rbac
 ```
+
+Each generated script includes:
+
+- `COMPATIBLE_VERSIONS = [...]`
+- `check_url_available(url)`
+- `check_version_in_response_header(args)`
+- `scythe_test_definition(args) -> int`
+- `main()` and `if __name__ == "__main__": main()` guard
+
+Validation loop:
+
+```bash
+scythe check route_access_test --json
+scythe check route_access_test --json --strict
+scythe check route_access_test --json --fix
+scythe run route_access_test -- --url https://demo.stellarbridge.app
+scythe run --json route_access_test -- --url https://demo.stellarbridge.app
+
+# local deterministic target for development
+scythe fixture serve --host 127.0.0.1 --port 8787
+scythe fixture serve --list-profiles
+scythe fixture serve --profile minimal --host 127.0.0.1 --port 8787
+scythe run route_access_test -- --url http://127.0.0.1:8787
+
+# discovery / snippets / doctor
+scythe discover routes --openapi ./openapi.json --json
+scythe snippet lookup csrf --json
+scythe doctor ai --json
+```
+
+For the full authoring contract, see `docs/AI_TEST_AUTHORING.md`.
 
 Notes:
 - The CLI looks for tests in ./.scythe/scythe_tests.
