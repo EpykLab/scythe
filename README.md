@@ -34,6 +34,7 @@ Scythe operates on the principle that robust systems must be tested under advers
   * **Request Flooding**: Test DDoS resilience and rate limiting
   * **UUID Guessing**: Test resource enumeration protections
 * **Dual Execution Modes**: UI mode (Selenium) and API mode (direct HTTP requests)
+* **Playwright Integration**: Run existing Playwright tests (`plw.Run`) or use Playwright's API directly (`plw.Wrap`) within scythe
 * **Journeys**: Multi-step workflow testing for complex user scenarios (UI and API modes)
 * **Expected Results System**: Unit-testing-style validation with clear pass/fail criteria
 * **Behavior Patterns**: Human, machine, and stealth execution patterns
@@ -279,6 +280,10 @@ Install the package
 # in an activated venv
 
 pip3 install scythe-ttp
+
+# Optional: install with Playwright support
+pip3 install 'scythe-ttp[playwright]'
+playwright install
 ```
 
 #### If you would like to contribute:
@@ -581,6 +586,64 @@ executor = JourneyExecutor(
 result = executor.run()
 ```
 
+### 7. Playwright Integration
+
+Run existing Playwright tests from scythe or use Playwright's browser API directly:
+
+**Run existing Playwright test files:**
+```python
+from scythe.playwright import Run
+
+# Run a pytest-playwright test and assert it passes
+Run("tests/test_login.py").expect(passed=True)
+
+# Run with options
+Run("tests/test_login.py", browser="firefox", headed=True).expect(passed=True)
+
+# Expect security controls to block the test
+Run("tests/test_xss_attempt.py").expect(passed=False)
+```
+
+**Use Playwright's API directly within scythe:**
+```python
+from scythe.playwright import Wrap
+
+with Wrap(headless=True) as pw:
+    pw.page.goto("https://target.com/login")
+    pw.page.fill("#username", "admin")
+    pw.page.fill("#password", "password123")
+    pw.page.click("button[type=submit]")
+
+    # Scythe-style assertions
+    pw.expect_url_contains("/dashboard")
+    pw.expect_element_visible(".welcome-message")
+```
+
+**Use as Journey Actions:**
+```python
+from scythe.playwright import PlaywrightRunAction, PlaywrightWrapAction
+from scythe.journeys.base import Journey, Step
+
+# PlaywrightRunAction in a Journey
+journey = Journey(
+    name="Playwright Security Tests",
+    description="Run Playwright tests from scythe",
+    steps=[
+        Step("Login tests", "Verify login flow", actions=[
+            PlaywrightRunAction("tests/test_login.py", expected_result=True)
+        ]),
+    ]
+)
+
+# PlaywrightWrapAction for inline Playwright code
+class CheckDashboard(PlaywrightWrapAction):
+    def run(self, page, context):
+        page.goto(context["target_url"] + "/dashboard")
+        return page.locator("h1").text_content() == "Dashboard"
+```
+
+> **Install Playwright support:** `pip install 'scythe-ttp[playwright]'` then `playwright install`
+
 ## Advanced Features
 
 ### API Mode vs UI Mode
@@ -797,6 +860,10 @@ Journeys support various action types for building complex workflows:
   - JSON path assertions (`expected_json_paths`)
   - Rate limit handling
 - `TTPAction`: Execute TTPs in API mode
+
+**Playwright Actions:**
+- `PlaywrightRunAction`: Run existing pytest-playwright test files and assert on results
+- `PlaywrightWrapAction`: Use Playwright's sync API directly within a Journey step
 
 ```python
 from scythe.journeys.actions import ApiRequestAction, NavigateAction, FillFormAction
@@ -1148,14 +1215,13 @@ Scythe's modular architecture enables flexible testing scenarios:
          │                       │                       │
          └───────────────────────┼───────────────────────┘
                                  │
-                    ┌─────────────────┐
-                    │   Core Engine   │
-                    │                 │
-                    │ • Execution     │
-                    │ • Authentication│
-                    │ • Behaviors     │
-                    │ • Reporting     │
-                    └─────────────────┘
+              ┌─────────────────────────────────┐
+              │          Core Engine            │
+              │                                 │
+              │ • Execution    • Playwright     │
+              │ • Authentication  (Run & Wrap)  │
+              │ • Behaviors    • Reporting      │
+              └─────────────────────────────────┘
 ```
 
 ### Core Components
@@ -1163,6 +1229,7 @@ Scythe's modular architecture enables flexible testing scenarios:
 - **Core Engine**: Execution framework, authentication, and behavior management
 - **TTPs**: Individual test procedures for specific scenarios
 - **Journeys**: Multi-step workflows combining multiple actions
+- **Playwright**: Run existing Playwright tests or use Playwright's API directly (`scythe.playwright`)
 - **Orchestrators**: Scale and distribution management for large test runs
 - **Behaviors**: Execution timing and pattern control
 - **Authentication**: Session management and user simulation
@@ -1203,6 +1270,8 @@ Note: The CLI is implemented with Typer, so `scythe --help` and per-command help
     - `api-journey` (default)
     - `api-auth-journey`
     - `ttp-api`
+    - `playwright-run`
+    - `playwright-wrap`
     - `sb-route-matrix`
     - `sb-mfa-gate`
     - `sb-org-rbac`
@@ -1252,6 +1321,8 @@ scythe new bruteforce_test --kind ttp-api
 scythe new stellarbridge_route_matrix --kind sb-route-matrix
 scythe new stellarbridge_mfa_gate --kind sb-mfa-gate
 scythe new stellarbridge_org_rbac --kind sb-org-rbac
+scythe new login_browser_test --kind playwright-run
+scythe new inline_browser_test --kind playwright-wrap
 ```
 
 Each generated script includes:

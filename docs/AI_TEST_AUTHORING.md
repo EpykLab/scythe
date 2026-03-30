@@ -34,6 +34,8 @@ Use this loop when creating or updating tests:
 - `api-journey` (default): Unauthenticated route policy checks using `Journey` and `ApiRequestAction`.
 - `api-auth-journey`: Authenticated API checks using `CookieJWTAuth` and CSRF handling.
 - `ttp-api`: API-mode TTP example using `LoginBruteforceTTP`.
+- `playwright-run`: Run existing pytest-playwright test files with result assertions.
+- `playwright-wrap`: Use Playwright's sync API directly in a scythe test.
 - `sb-route-matrix`: Stellarbridge-style route policy matrix (public/authz/private).
 - `sb-mfa-gate`: Stellarbridge-style MFA non-compliance enforcement check.
 - `sb-org-rbac`: Stellarbridge-style organization RBAC check.
@@ -107,9 +109,33 @@ Nightly prompt-to-pass evaluation uses:
 - `python -m scythe.evals.harness --output artifacts/evals/nightly.json`
 - Scenario inputs under `scythe/evals/scenarios/`
 
+## Playwright Integration
+
+Scythe supports two Playwright primitives (requires `pip install 'scythe-ttp[playwright]'` + `playwright install`):
+
+- **`Run(test_file)`**: Execute a pytest-playwright test file as a subprocess and assert on results.
+  ```python
+  from scythe.playwright import Run
+  Run("tests/test_login.py").expect(passed=True)
+  ```
+
+- **`Wrap()`**: Use Playwright's sync Page API directly with managed lifecycle.
+  ```python
+  from scythe.playwright import Wrap
+  with Wrap(headless=True) as pw:
+      pw.page.goto("https://target.com/login")
+      pw.page.fill("#username", "admin")
+      pw.page.click("button[type=submit]")
+      pw.expect_url_contains("/dashboard")
+  ```
+
+- Both are available as Journey Actions: `PlaywrightRunAction` and `PlaywrightWrapAction`.
+- Use `playwright-run` or `playwright-wrap` template kinds when generating Playwright-based tests.
+
 ## Authoring Notes
 
 - Prefer API mode (`JourneyExecutor(..., mode="API")` or API-mode TTPs) unless browser behavior is required.
+- For browser tests, consider Playwright (`scythe.playwright`) as an alternative to Selenium UI mode.
 - Keep route expectations explicit (`expected_status`, `expected_result`) per action.
 - Use `flush=True` only for requests whose response/session side-effects must be discarded.
 - Keep `COMPATIBLE_VERSIONS` up to date and sync it with `scythe db sync-compat <name>`.

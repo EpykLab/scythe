@@ -42,6 +42,9 @@ dependencies = [
     "shellingham>=1.5"
 ]
 
+[project.optional-dependencies]
+playwright = ["playwright>=1.40", "pytest-playwright>=0.4", "pytest-json-report>=1.5"]
+
 [project.scripts]
 scythe = "scythe.cli.main:main"
 

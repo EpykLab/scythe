@@ -9,3 +9,8 @@ Current primary references:
 
 For API-mode Journey execution, start with:
 - `API_REFERENCE.md#journey-api-mode-and-apirequestaction-new`
+
+For Playwright-based Journey actions:
+- `API_REFERENCE.md#playwright-integration`
+- `PlaywrightRunAction`: Run existing pytest-playwright test files within a Journey
+- `PlaywrightWrapAction`: Use Playwright's sync API directly in a Journey step

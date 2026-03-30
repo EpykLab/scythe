@@ -482,6 +482,52 @@ class APITestAction(Action):
             return False
 ```
 
+### Using Playwright in Custom Actions
+
+For browser tests, you can use Playwright instead of Selenium via `PlaywrightWrapAction`:
+
+```python
+from scythe.playwright import PlaywrightWrapAction
+from typing import Dict, Any
+
+class PlaywrightSecurityCheck(PlaywrightWrapAction):
+    """Custom Playwright action for security testing."""
+
+    def __init__(self, target_path: str, expected_blocked: bool = True):
+        super().__init__(
+            name=f"Security Check: {target_path}",
+            description=f"Check if {target_path} is properly secured",
+            expected_result=not expected_blocked,  # expect failure if blocked
+        )
+        self.target_path = target_path
+
+    def run(self, page, context: Dict[str, Any]) -> bool:
+        target_url = context.get("target_url", "http://localhost")
+        page.goto(f"{target_url}{self.target_path}")
+
+        # Check if we were redirected to login (security control working)
+        if "/login" in page.url:
+            return False  # blocked — redirected to login
+
+        # Check for 403/401 response
+        return page.locator("h1").text_content() != "Access Denied"
+```
+
+You can also run existing pytest-playwright test files as part of a Journey:
+
+```python
+from scythe.playwright import PlaywrightRunAction
+
+# Run an existing Playwright test file and assert it passes
+run_action = PlaywrightRunAction(
+    test_file="tests/test_admin_access.py",
+    expected_result=True,
+    browser="chromium",
+)
+```
+
+> Requires: `pip install 'scythe-ttp[playwright]'` and `playwright install`
+
 ### Complex Journey Example
 
 ```python

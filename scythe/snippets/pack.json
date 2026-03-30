@@ -17,6 +17,30 @@
       "title": "Private route should require authentication",
       "tags": ["private", "authz", "route"],
       "content": "ApiRequestAction(method='GET', url='/api/v1/auth/me', expected_status=401, expected_result=True)"
+    },
+    {
+      "id": "playwright-run",
+      "title": "Run a Playwright test file and assert",
+      "tags": ["playwright", "run", "browser", "test"],
+      "content": "from scythe.playwright import Run\nRun('tests/test_login.py').expect(passed=True)"
+    },
+    {
+      "id": "playwright-wrap",
+      "title": "Use Playwright sync API directly in scythe",
+      "tags": ["playwright", "wrap", "browser", "page"],
+      "content": "from scythe.playwright import Wrap\nwith Wrap(headless=True) as pw:\n    pw.page.goto('https://target.com/login')\n    pw.page.fill('#username', 'admin')\n    pw.page.click('button[type=submit]')\n    pw.expect_url_contains('/dashboard')"
+    },
+    {
+      "id": "playwright-run-action",
+      "title": "PlaywrightRunAction in a Journey Step",
+      "tags": ["playwright", "run", "journey", "action"],
+      "content": "from scythe.playwright import PlaywrightRunAction\nStep(name='Playwright tests', description='Run PW tests', actions=[PlaywrightRunAction(test_file='tests/test_login.py', expected_result=True)])"
+    },
+    {
+      "id": "playwright-wrap-action",
+      "title": "PlaywrightWrapAction subclass for inline Playwright",
+      "tags": ["playwright", "wrap", "journey", "action"],
+      "content": "from scythe.playwright import PlaywrightWrapAction\n\nclass LoginTest(PlaywrightWrapAction):\n    def run(self, page, context):\n        page.goto(context['target_url'] + '/login')\n        page.fill('#username', 'admin')\n        page.click('button[type=submit]')\n        return '/dashboard' in page.url"
     }
   ]
 }

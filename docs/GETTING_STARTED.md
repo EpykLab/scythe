@@ -20,8 +20,9 @@ This guide will help you get up and running with Scythe, an extensible framework
 Before installing Scythe, ensure you have:
 
 - **Python 3.8+** installed
-- **Google Chrome** browser
+- **Google Chrome** browser (for Selenium UI mode)
 - **ChromeDriver** (automatically managed by Selenium)
+- **Optional:** Playwright for `scythe.playwright` primitives (`pip install 'scythe-ttp[playwright]'` + `playwright install`)
 
 ### Install Scythe
 

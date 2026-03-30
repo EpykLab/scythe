@@ -883,11 +883,251 @@ if __name__ == "__main__":
     main()
 """
 
+TEST_TEMPLATE_PLAYWRIGHT_RUN = """#!/usr/bin/env python3
+
+import argparse
+import sys
+from typing import Optional, Tuple
+
+from requests.exceptions import RequestException
+
+# defines which versions of the target software this test is compatible with
+COMPATIBLE_VERSIONS = ["1.2.3"]
+
+
+def add_common_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--protocol", default="https", choices=["http", "https"], help="Target protocol")
+    parser.add_argument("--port", type=int, help="Optional explicit target port")
+    parser.add_argument("--timeout", type=int, default=15, help="HTTP timeout in seconds")
+    parser.add_argument("--username", help="Optional username input")
+    parser.add_argument("--password", help="Optional password input")
+    parser.add_argument("--token", help="Optional bearer token input")
+    parser.add_argument("--headless", action="store_true", help="Run browser in headless mode")
+    parser.add_argument("--browser", default="chromium", choices=["chromium", "firefox", "webkit"], help="Browser engine")
+    parser.add_argument("--verbose", action="store_true", help="Verbose output")
+
+
+def check_url_available(url: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    import requests
+
+    if not url or not str(url).strip():
+        return False, "No URL provided (pass --url, e.g. --url https://demo.stellarbridge.app)", None
+
+    normalized = str(url).strip()
+    if not (normalized.startswith("http://") or normalized.startswith("https://")):
+        candidates = ["https://" + normalized, "http://" + normalized]
+    else:
+        candidates = [normalized]
+
+    last_error = None
+    for candidate in candidates:
+        try:
+            response = requests.get(candidate, timeout=15)
+            if response.status_code < 500:
+                return True, None, candidate.rstrip("/")
+            last_error = "HTTP %s" % response.status_code
+        except RequestException as exc:
+            last_error = str(exc)
+
+    return False, last_error, None
+
+
+def check_version_in_response_header(args) -> bool:
+    import requests
+
+    url = args.url
+    response = requests.get(url, timeout=max(1, int(getattr(args, "timeout", 15))))
+    version = response.headers.get("x-scythe-target-version")
+
+    if not version or version not in COMPATIBLE_VERSIONS:
+        print("This test is not compatible with the target version in x-scythe-target-version.")
+        print("Please update COMPATIBLE_VERSIONS in this script.")
+        return False
+
+    return True
+
+
+def scythe_test_definition(args) -> int:
+    from scythe.playwright import Run
+
+    # Run an existing pytest-playwright test file and assert results.
+    # Replace the test_file path with your actual Playwright test.
+    runner = Run(
+        "tests/test_example.py",
+        browser=args.browser,
+        headed=not args.headless,
+        env={"BASE_URL": args.url},
+    )
+
+    result = runner.execute()
+
+    print(f"Playwright tests: {result.passed_count} passed, {result.failed_count} failed, {result.skipped_count} skipped")
+
+    if result.errors:
+        for err in result.errors[:5]:
+            print(f"  ERROR: {err}")
+
+    # Return 0 if tests match expectations, 1 otherwise
+    if result.passed:
+        print("All Playwright tests passed.")
+        return 0
+    else:
+        print("Some Playwright tests failed.")
+        return 1
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Scythe Playwright Run Test")
+    parser.add_argument("--url", required=True, help="Target URL")
+    parser.add_argument("--gate-versions", action="store_true", help="Gate on compatible version header")
+    add_common_args(parser)
+    args = parser.parse_args()
+
+    ok, error, resolved_url = check_url_available(args.url)
+    if not ok:
+        print(f"URL not available: {error}")
+        sys.exit(1)
+
+    if resolved_url:
+        args.url = resolved_url
+
+    if args.gate_versions and not check_version_in_response_header(args):
+        print("No compatible version found in response header.")
+        sys.exit(1)
+
+    exit_code = scythe_test_definition(args)
+    sys.exit(exit_code)
+
+
+if __name__ == "__main__":
+    main()
+"""
+
+TEST_TEMPLATE_PLAYWRIGHT_WRAP = """#!/usr/bin/env python3
+
+import argparse
+import sys
+from typing import Optional, Tuple
+
+from requests.exceptions import RequestException
+
+# defines which versions of the target software this test is compatible with
+COMPATIBLE_VERSIONS = ["1.2.3"]
+
+
+def add_common_args(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--protocol", default="https", choices=["http", "https"], help="Target protocol")
+    parser.add_argument("--port", type=int, help="Optional explicit target port")
+    parser.add_argument("--timeout", type=int, default=15, help="HTTP timeout in seconds")
+    parser.add_argument("--username", help="Optional username input")
+    parser.add_argument("--password", help="Optional password input")
+    parser.add_argument("--token", help="Optional bearer token input")
+    parser.add_argument("--headless", action="store_true", help="Run browser in headless mode")
+    parser.add_argument("--browser", default="chromium", choices=["chromium", "firefox", "webkit"], help="Browser engine")
+    parser.add_argument("--verbose", action="store_true", help="Verbose output")
+
+
+def check_url_available(url: str) -> Tuple[bool, Optional[str], Optional[str]]:
+    import requests
+
+    if not url or not str(url).strip():
+        return False, "No URL provided (pass --url, e.g. --url https://demo.stellarbridge.app)", None
+
+    normalized = str(url).strip()
+    if not (normalized.startswith("http://") or normalized.startswith("https://")):
+        candidates = ["https://" + normalized, "http://" + normalized]
+    else:
+        candidates = [normalized]
+
+    last_error = None
+    for candidate in candidates:
+        try:
+            response = requests.get(candidate, timeout=15)
+            if response.status_code < 500:
+                return True, None, candidate.rstrip("/")
+            last_error = "HTTP %s" % response.status_code
+        except RequestException as exc:
+            last_error = str(exc)
+
+    return False, last_error, None
+
+
+def check_version_in_response_header(args) -> bool:
+    import requests
+
+    url = args.url
+    response = requests.get(url, timeout=max(1, int(getattr(args, "timeout", 15))))
+    version = response.headers.get("x-scythe-target-version")
+
+    if not version or version not in COMPATIBLE_VERSIONS:
+        print("This test is not compatible with the target version in x-scythe-target-version.")
+        print("Please update COMPATIBLE_VERSIONS in this script.")
+        return False
+
+    return True
+
+
+def scythe_test_definition(args) -> int:
+    from scythe.playwright import Wrap
+
+    # Use Playwright's sync API directly with scythe lifecycle hooks.
+    # Customize the browser interactions below for your test.
+    try:
+        with Wrap(headless=args.headless, browser_type=args.browser) as pw:
+            pw.page.goto(f"{args.url}/")
+
+            # Example: verify the page loaded
+            pw.expect_element_visible("body")
+
+            # TODO: Add your Playwright test logic here
+            # pw.page.fill("#username", args.username or "admin")
+            # pw.page.fill("#password", args.password or "password")
+            # pw.page.click("button[type=submit]")
+            # pw.expect_url_contains("/dashboard")
+
+            print(f"Page loaded: {pw.page.url}")
+            print(f"Assertions passed: {len(pw.assertions)}")
+            return 0
+
+    except Exception as e:
+        print(f"Playwright test failed: {e}")
+        return 1
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Scythe Playwright Wrap Test")
+    parser.add_argument("--url", required=True, help="Target URL")
+    parser.add_argument("--gate-versions", action="store_true", help="Gate on compatible version header")
+    add_common_args(parser)
+    args = parser.parse_args()
+
+    ok, error, resolved_url = check_url_available(args.url)
+    if not ok:
+        print(f"URL not available: {error}")
+        sys.exit(1)
+
+    if resolved_url:
+        args.url = resolved_url
+
+    if args.gate_versions and not check_version_in_response_header(args):
+        print("No compatible version found in response header.")
+        sys.exit(1)
+
+    exit_code = scythe_test_definition(args)
+    sys.exit(exit_code)
+
+
+if __name__ == "__main__":
+    main()
+"""
+
 
 TEST_TEMPLATES: Dict[str, str] = {
     "api-journey": TEST_TEMPLATE_API_JOURNEY,
     "api-auth-journey": TEST_TEMPLATE_API_AUTH_JOURNEY,
     "ttp-api": TEST_TEMPLATE_TTP_API,
+    "playwright-run": TEST_TEMPLATE_PLAYWRIGHT_RUN,
+    "playwright-wrap": TEST_TEMPLATE_PLAYWRIGHT_WRAP,
     "sb-route-matrix": TEST_TEMPLATE_SB_ROUTE_MATRIX,
     "sb-mfa-gate": TEST_TEMPLATE_SB_MFA_GATE,
     "sb-org-rbac": TEST_TEMPLATE_SB_ORG_RBAC,

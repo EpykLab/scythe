@@ -37,6 +37,11 @@ Scythe is a powerful Python-based framework designed for testing applications un
   - Context sharing between steps
   - Error handling and recovery
 
+- **[Playwright Integration](API_REFERENCE.md#playwright-integration)** - Run or wrap Playwright tests
+  - `Run()`: Execute pytest-playwright files with result assertions
+  - `Wrap()`: Use Playwright's sync API directly in scythe tests
+  - `PlaywrightRunAction` / `PlaywrightWrapAction`: Journey-compatible actions
+
 - **[Authentication Systems](HYBRID_AUTH.md)** - Pre-execution authentication
   - Basic authentication (username/password)
   - Bearer token authentication (APIs)
@@ -344,6 +349,7 @@ Scythe Adverse Conditions Testing Framework
 
 - **Custom TTPs**: Create domain-specific test procedures
 - **Custom Actions**: Add new journey action types
+- **Playwright Integration**: Run or embed Playwright tests (`scythe.playwright`)
 - **Custom Behaviors**: Implement specialized execution patterns
 - **Custom Orchestrators**: Build unique distribution strategies
 - **Custom Authentication**: Support new auth mechanisms
@@ -355,6 +361,7 @@ scythe/
 ├── scythe/                 # Core framework code
 │   ├── core/              # TTPs and execution engine
 │   ├── journeys/          # Multi-step workflow framework
+│   ├── playwright/        # Playwright integration (Run & Wrap)
 │   ├── orchestrators/     # Scale and distribution management
 │   ├── auth/              # Authentication systems
 │   ├── behaviors/         # Execution pattern control

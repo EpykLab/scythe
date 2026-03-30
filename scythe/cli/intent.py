@@ -5,6 +5,8 @@ INTENT_RULES: List[Tuple[str, List[str]]] = [
     ("sb-mfa-gate", ["mfa", "non-compliance", "forbidden", "403"]),
     ("sb-org-rbac", ["rbac", "organization", "org", "role", "permission"]),
     ("sb-route-matrix", ["public", "private", "route", "matrix", "access"]),
+    ("playwright-run", ["playwright", "browser test", "playwright test"]),
+    ("playwright-wrap", ["playwright wrap", "playwright page", "playwright inline"]),
     ("api-auth-journey", ["authenticated", "login", "cookie", "jwt"]),
     ("ttp-api", ["bruteforce", "ttp", "payload", "api endpoint"]),
     ("api-journey", ["journey", "api", "step"]),

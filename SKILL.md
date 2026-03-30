@@ -38,6 +38,30 @@ Follow this loop unless the user asks for a different flow:
    - `scythe run <name> --json -- --url <target-url>`
 8. Iterate on expectations based on observed API behavior.
 
+## Playwright Integration
+
+Scythe supports two Playwright primitives (requires `pip install 'scythe-ttp[playwright]'` + `playwright install`):
+
+- **`plw.Run(test_file)`**: Execute an existing pytest-playwright test file and assert on results.
+  ```python
+  from scythe.playwright import Run
+  Run("tests/test_login.py").expect(passed=True)
+  Run("tests/test_login.py", browser="firefox").expect(passed=False)
+  ```
+
+- **`plw.Wrap()`**: Use Playwright's sync Page API directly with scythe lifecycle hooks.
+  ```python
+  from scythe.playwright import Wrap
+  with Wrap(headless=True) as pw:
+      pw.page.goto("https://target.com/login")
+      pw.page.fill("#username", "admin")
+      pw.page.click("button[type=submit]")
+      pw.expect_url_contains("/dashboard")
+  ```
+
+- Both are also available as Journey Actions: `PlaywrightRunAction`, `PlaywrightWrapAction`.
+- Snippet lookup: `scythe snippet lookup "playwright" --json`
+
 ## Authoring Aids
 
 - Route discovery:
@@ -59,11 +83,14 @@ Use these built-ins:
 - `api-journey` (default): unauthenticated/public route checks.
 - `api-auth-journey`: auth + CSRF workflows.
 - `ttp-api`: API-mode TTP testing.
+- `playwright-run`: run existing pytest-playwright test files with assertions.
+- `playwright-wrap`: use Playwright's sync API directly in a scythe test.
 - `sb-route-matrix`: Stellarbridge route policy matrix.
 - `sb-mfa-gate`: MFA enforcement checks.
 - `sb-org-rbac`: organization RBAC checks.
 
 If intent is ambiguous, choose `api-journey` first and refine.
+When the user mentions Playwright or browser testing with Playwright, choose `playwright-run` or `playwright-wrap`.
 
 ## Contract Requirements For Test Scripts
 

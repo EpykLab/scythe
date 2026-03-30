@@ -1080,3 +1080,152 @@ journey = Journey(name="Cookie API", description="", steps=[step], authenticatio
 
 results = JourneyExecutor(journey, target_url="http://localhost:8080", mode="API").run()
 ```
+
+## Playwright Integration
+
+Scythe provides two Playwright primitives for browser testing. Install with: `pip install 'scythe-ttp[playwright]'` then `playwright install`.
+
+**Location:** `scythe.playwright`
+
+### Run
+
+Execute an existing pytest-playwright test file as a subprocess and assert on results.
+
+```python
+from scythe.playwright import Run
+
+# Basic usage
+result = Run("tests/test_login.py").execute()
+print(result.passed, result.passed_count, result.failed_count)
+
+# Fluent assertions (auto-executes if needed)
+Run("tests/test_login.py").expect(passed=True)
+Run("tests/test_login.py").expect(passed=False)  # expect security controls to block
+Run("tests/test_login.py").expect(min_passed=3, max_failed=0)
+
+# With options
+Run("tests/test_login.py", browser="firefox", headed=True, keyword="auth").expect(passed=True)
+```
+
+#### Constructor Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `test_file` | `str` | Path to the pytest-playwright test file |
+| `marker` | `Optional[str]` | pytest `-m` marker expression |
+| `keyword` | `Optional[str]` | pytest `-k` keyword expression |
+| `timeout` | `Optional[float]` | Subprocess timeout in seconds |
+| `env` | `Optional[Dict[str, str]]` | Extra environment variables |
+| `headed` | `bool` | Run browser in headed mode (default: `False`) |
+| `browser` | `str` | Browser engine: `"chromium"`, `"firefox"`, `"webkit"` (default: `"chromium"`) |
+| `extra_args` | `Optional[List[str]]` | Additional pytest CLI arguments |
+
+#### Methods
+
+- **`execute()`** — Run the test, return `PlaywrightResult`
+- **`expect(passed=None, min_passed=None, max_failed=None)`** — Assert expectations, return `self` for chaining. Raises `PlaywrightExpectationError` on failure.
+
+### PlaywrightRunAction
+
+Journey Action wrapper for `Run`. Use in Steps/Journeys.
+
+```python
+from scythe.playwright import PlaywrightRunAction
+from scythe.journeys.base import Step
+
+Step(
+    name="Login tests",
+    description="Run Playwright login tests",
+    actions=[
+        PlaywrightRunAction(
+            test_file="tests/test_login.py",
+            expected_result=True,
+            browser="chromium",
+        )
+    ]
+)
+```
+
+Supports `{context_key}` template substitution in `test_file` and `env` values.
+
+### Wrap
+
+Context manager providing a managed Playwright sync `Page` with scythe lifecycle hooks.
+
+```python
+from scythe.playwright import Wrap
+
+with Wrap(headless=True, browser_type="chromium") as pw:
+    pw.page.goto("https://target.com/login")
+    pw.page.fill("#username", "admin")
+    pw.page.fill("#password", "password123")
+    pw.page.click("button[type=submit]")
+
+    # Built-in assertions (raise WrapAssertionError on failure)
+    pw.expect_url_contains("/dashboard")
+    pw.expect_element_visible(".welcome-message")
+    pw.expect_element_hidden(".spinner")
+    pw.expect_text_content("h1", "Welcome")
+```
+
+#### Constructor Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `headless` | `bool` | Run headless (default: `True`) |
+| `browser_type` | `str` | `"chromium"`, `"firefox"`, `"webkit"` (default: `"chromium"`) |
+| `behavior` | `Optional[Behavior]` | Scythe Behavior instance for lifecycle hooks |
+| `**launch_kwargs` | | Additional kwargs passed to `browser.launch()` |
+
+#### Properties
+
+- **`pw.page`** — Playwright sync `Page` (full API access)
+- **`pw.browser`** — Playwright `Browser` instance
+- **`pw.browser_context`** — Playwright `BrowserContext` instance
+- **`pw.assertions`** — List of assertion results from `expect_*` calls
+
+#### Assertion Methods
+
+All return `self` for chaining. Raise `WrapAssertionError` on failure.
+
+- **`expect_url_contains(substring)`**
+- **`expect_element_visible(selector, timeout=5000)`**
+- **`expect_element_hidden(selector, timeout=5000)`**
+- **`expect_text_content(selector, expected_text, timeout=5000)`**
+
+### PlaywrightWrapAction
+
+Abstract Journey Action for inline Playwright code. Subclass and implement `run()`.
+
+```python
+from scythe.playwright import PlaywrightWrapAction
+
+class LoginTest(PlaywrightWrapAction):
+    def run(self, page, context):
+        page.goto(context["target_url"] + "/login")
+        page.fill("#username", context.get("username", "admin"))
+        page.fill("#password", context.get("password", "test"))
+        page.click("button[type=submit]")
+        return "/dashboard" in page.url
+
+# Use in a Journey Step
+step = Step("Login", "Test login", actions=[
+    LoginTest(name="Login Test", expected_result=True)
+])
+```
+
+### PlaywrightResult
+
+Dataclass returned by `Run.execute()`.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `passed` | `bool` | All tests passed |
+| `total` | `int` | Total test count |
+| `passed_count` | `int` | Number of passed tests |
+| `failed_count` | `int` | Number of failed tests |
+| `skipped_count` | `int` | Number of skipped tests |
+| `duration_s` | `float` | Total duration in seconds |
+| `tests` | `List[PlaywrightTestResult]` | Individual test results |
+| `errors` | `List[str]` | Error messages from failed tests |
+| `raw_output` | `str` | Raw subprocess output |
