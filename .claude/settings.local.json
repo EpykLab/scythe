@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(find /home/dhoenisch/code/scythe/scythe -name \"__init__.py\" -type f -exec wc -l {})",
+      "Bash(python:*)",
+      "Bash(pip install:*)"
+    ]
+  }
+}

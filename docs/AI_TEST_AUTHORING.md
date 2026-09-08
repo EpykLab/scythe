@@ -75,6 +75,33 @@ Use `--fix` to apply safe deterministic repairs before revalidation.
 - `data.results[]` status entries
 - `diagnostics[]` with error code and hint when execution fails
 
+## Response Header Assertions
+
+`ApiRequestAction` can verify security and cache headers without a custom
+action:
+
+```python
+ApiRequestAction(
+    method="GET",
+    url="/",
+    expected_status=200,
+    expected_headers={
+        "X-Content-Type-Options": "nosniff",
+        "Content-Security-Policy": "__exists__",
+    },
+    expected_header_contains={
+        "Strict-Transport-Security": ["max-age=", "includeSubDomains"],
+    },
+)
+```
+
+Header names are matched case-insensitively. `expected_headers` supports exact
+values and the `__exists__` sentinel. `expected_header_contains` accepts one
+substring or a list, all of which must be present. Sensitive header values are
+masked in result diagnostics. This capability exists so release tests can
+assert transport and browser hardening through the same deterministic journey
+contract as status and JSON checks.
+
 ## Local Fixture Target
 
 For deterministic local iteration:

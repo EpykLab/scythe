@@ -267,6 +267,85 @@ class TestApiRequestActionModels(unittest.TestCase):
         self.assertFalse(action.get_result("json_paths_ok"))
         self.assertFalse(action.get_result("api_assertions_ok"))
 
+    def test_expected_headers_support_exact_exists_and_contains(self):
+        fake_resp = _FakeResponse(
+            status_code=200,
+            headers={
+                "Content-Type": "application/json",
+                "Strict-Transport-Security": (
+                    "max-age=31536000; includeSubDomains"
+                ),
+                "X-Content-Type-Options": "nosniff",
+            },
+            json_body={"status": "ok"},
+        )
+        action = ApiRequestAction(
+            method="GET",
+            url="/api/health",
+            expected_status=200,
+            expected_headers={
+                "content-type": "__exists__",
+                "x-content-type-options": "nosniff",
+            },
+            expected_header_contains={
+                "strict-transport-security": "includeSubDomains",
+            },
+        )
+        context: Dict[str, Any] = {
+            "target_url": "https://example.test",
+            "requests_session": _FakeSession(fake_resp),
+        }
+
+        self.assertTrue(action.execute(driver=None, context=context))
+        self.assertTrue(action.get_result("headers_ok"))
+        self.assertTrue(action.get_result("api_assertions_ok"))
+
+    def test_expected_headers_fail_on_missing_or_wrong_value(self):
+        fake_resp = _FakeResponse(
+            status_code=200,
+            headers={"X-Content-Type-Options": "invalid"},
+            json_body={"status": "ok"},
+        )
+        action = ApiRequestAction(
+            method="GET",
+            url="/api/health",
+            expected_status=200,
+            expected_headers={
+                "Content-Security-Policy": "__exists__",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
+        context: Dict[str, Any] = {
+            "target_url": "https://example.test",
+            "requests_session": _FakeSession(fake_resp),
+        }
+
+        self.assertFalse(action.execute(driver=None, context=context))
+        self.assertFalse(action.get_result("headers_ok"))
+        self.assertFalse(action.get_result("api_assertions_ok"))
+
+    def test_sensitive_expected_header_values_are_masked(self):
+        secret = "test-secret-value"
+        fake_resp = _FakeResponse(
+            status_code=200,
+            headers={"Set-Cookie": secret},
+            json_body={"status": "ok"},
+        )
+        action = ApiRequestAction(
+            method="GET",
+            url="/api/health",
+            expected_status=200,
+            expected_headers={"Set-Cookie": secret},
+        )
+        context: Dict[str, Any] = {
+            "target_url": "https://example.test",
+            "requests_session": _FakeSession(fake_resp),
+        }
+
+        self.assertTrue(action.execute(driver=None, context=context))
+        diagnostics = str(action.get_result("header_checks"))
+        self.assertNotIn(secret, diagnostics)
+
 
 if __name__ == "__main__":
     unittest.main()

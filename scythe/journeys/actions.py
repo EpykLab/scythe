@@ -853,6 +853,8 @@ class ApiRequestAction(Action):
         response_model_context_key: Optional[str] = None,
         fail_on_validation_error: bool = False,
         expected_json_paths: Optional[Dict[str, Any]] = None,
+        expected_headers: Optional[Dict[str, str]] = None,
+        expected_header_contains: Optional[Dict[str, Any]] = None,
         honor_rate_limit: bool = True,
     ):
         self.method = method.upper()
@@ -868,6 +870,8 @@ class ApiRequestAction(Action):
         self.response_model_context_key = response_model_context_key
         self.fail_on_validation_error = fail_on_validation_error
         self.expected_json_paths = expected_json_paths or {}
+        self.expected_headers = expected_headers or {}
+        self.expected_header_contains = expected_header_contains or {}
         self.honor_rate_limit = honor_rate_limit
         name = name or f"API {self.method} {url}"
         description = description or f"Perform {self.method} request to {url}"
@@ -1068,6 +1072,54 @@ class ApiRequestAction(Action):
                 response_headers = dict(getattr(response, "headers", {}) or {})
                 # Mask sensitive response headers
                 self.store_result("response_headers", _mask_headers(response_headers))
+                header_checks = []
+                sensitive_headers = {
+                    "authorization",
+                    "proxy-authorization",
+                    "cookie",
+                    "set-cookie",
+                    "x-api-key",
+                    "x-auth-token",
+                }
+                for header_name, expected in self.expected_headers.items():
+                    actual = _h(response_headers, header_name)
+                    is_sensitive = header_name.lower() in sensitive_headers
+                    if expected == "__exists__":
+                        passed = actual is not None
+                    else:
+                        passed = actual is not None and str(actual) == str(expected)
+                    header_checks.append(
+                        {
+                            "header": header_name,
+                            "match": "exact",
+                            "expected": "***" if is_sensitive else expected,
+                            "actual": "***"
+                            if is_sensitive and actual is not None
+                            else actual,
+                            "passed": passed,
+                        }
+                    )
+                for header_name, expected in self.expected_header_contains.items():
+                    actual = _h(response_headers, header_name)
+                    is_sensitive = header_name.lower() in sensitive_headers
+                    needles = expected if isinstance(expected, list) else [expected]
+                    passed = actual is not None and all(
+                        str(needle) in str(actual) for needle in needles
+                    )
+                    header_checks.append(
+                        {
+                            "header": header_name,
+                            "match": "contains",
+                            "expected": "***" if is_sensitive else needles,
+                            "actual": "***"
+                            if is_sensitive and actual is not None
+                            else actual,
+                            "passed": passed,
+                        }
+                    )
+                headers_ok = all(check["passed"] for check in header_checks)
+                self.store_result("header_checks", header_checks)
+                self.store_result("headers_ok", headers_ok)
                 # Publish to context for downstream version extraction and rate-limit coordination
                 context["last_response_headers"] = response_headers
                 context["last_response_url"] = resolved_url
@@ -1274,8 +1326,9 @@ class ApiRequestAction(Action):
                 # Store the final status check result
                 self.store_result("http_status_ok", http_ok)
 
-                # Combine HTTP checks with optional JSON path checks
-                self.store_result("api_assertions_ok", http_ok and json_paths_ok)
+                # Combine HTTP, header, and optional JSON path checks.
+                assertions_ok = http_ok and json_paths_ok and headers_ok
+                self.store_result("api_assertions_ok", assertions_ok)
 
                 # Optionally fail on validation error
                 if (
@@ -1290,7 +1343,7 @@ class ApiRequestAction(Action):
 
                 # Return False if status doesn't match expected, regardless of expected_result
                 # The framework will then compare this with expected_result to determine test outcome
-                return http_ok and json_paths_ok
+                return assertions_ok
             except Exception as e:
                 last_exception = e
                 self.store_result("duration_ms", int((time_fn() - start_ts) * 1000))
